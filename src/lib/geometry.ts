@@ -22,22 +22,60 @@ export interface ArtboardSize {
  *   (above the base curve, below the rim).
  * - handleGapDeg: angular gap left un-printed around the handle so artwork
  *   never wraps onto it.
- * - bandAvgRadius: average radius of the tapered print band cone.
  *
- * The printable arc length is (1 - handleGapDeg/360) x 2*pi*bandAvgRadius and the
- * band height is bandTop - bandBottom. Their ratio (~2.934) MUST equal the cup
- * artboard aspect ratio below, or artwork stretches on the 3D mug.
+ * The printable arc length is (1 - handleGapDeg/360) x 2*pi*avgBandRadius and
+ * the band height is bandTop - bandBottom. Their ratio (~2.934) MUST equal the
+ * cup artboard aspect ratio below, or artwork stretches on the 3D mug.
  */
 export const MUG_3D_PRINT = {
   bandBottom: 0.34,
   bandTop: 1.78,
   handleGapDeg: 76,
-  bandAvgRadius: 0.852,
 } as const;
+
+/**
+ * Outer-wall radius of the mug body at a given height. Must match the lathe
+ * profile in `buildMugProfile` (src/lib/editor/product-3d.ts).
+ */
+const MUG_WALL_CONTROL: [number, number][] = [
+  [0.06, 0.8],
+  [1.0, 0.845],
+  [1.95, 0.87],
+  [2.02, 0.875],
+];
+
+/**
+ * The print band sits slightly proud of the wall: the band is a straight cone
+ * while the body bulges outward at mid-height, and this offset keeps the band
+ * clear of that bulge so the body never z-fights through the artwork.
+ */
+export const MUG_BAND_EPS = 0.013;
+
+export function mugWallRadius(y: number): number {
+  const pts = MUG_WALL_CONTROL;
+  if (y <= pts[0][0]) return pts[0][1];
+  if (y >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [y0, r0] = pts[i];
+    const [y1, r1] = pts[i + 1];
+    if (y >= y0 && y <= y1) {
+      const t = (y - y0) / (y1 - y0);
+      return r0 + t * (r1 - r0);
+    }
+  }
+  return pts[pts.length - 1][1];
+}
+
+/** Radii of the tapered print-band cone, derived from the wall profile. */
+export function mugBandRadii() {
+  const bottom = mugWallRadius(MUG_3D_PRINT.bandBottom) + MUG_BAND_EPS;
+  const top = mugWallRadius(MUG_3D_PRINT.bandTop) + MUG_BAND_EPS;
+  return { bottom, top, avg: (bottom + top) / 2 };
+}
 
 export function mugBandAspectRatio(): number {
   const wrapFraction = 1 - MUG_3D_PRINT.handleGapDeg / 360;
-  const arcLength = wrapFraction * 2 * Math.PI * MUG_3D_PRINT.bandAvgRadius;
+  const arcLength = wrapFraction * 2 * Math.PI * mugBandRadii().avg;
   const bandHeight = MUG_3D_PRINT.bandTop - MUG_3D_PRINT.bandBottom;
   return arcLength / bandHeight;
 }

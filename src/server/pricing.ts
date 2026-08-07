@@ -43,8 +43,4 @@ export function quoteOrder(lines: QuoteLine[]): OrderQuote {
   };
 }
 
-export function formatCents(cents: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
-    cents / 100,
-  );
-}
+export { formatCents } from "@/lib/money";
