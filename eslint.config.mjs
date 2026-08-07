@@ -21,9 +21,11 @@ const eslintConfig = [
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
-  jsxA11y.flatConfigs.recommended,
   {
     rules: {
+      // next/core-web-vitals already registers the jsx-a11y plugin; apply the
+      // full recommended rule set on top of Next's partial selection.
+      ...jsxA11y.flatConfigs.recommended.rules,
       // Server actions and route handlers legitimately use unused-var patterns for narrowing.
       "@typescript-eslint/no-unused-vars": [
         "error",
