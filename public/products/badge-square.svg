@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" rx="24" fill="#EFF6FF"/>
+  <ellipse cx="200" cy="350" rx="60" ry="8" fill="#DBEAFE"/>
+  <!-- Square badge -->
+  <rect x="130" y="120" width="140" height="140" rx="16" fill="white" stroke="#3B82F6" stroke-width="3"/>
+  <!-- Pin -->
+  <line x1="200" y1="260" x2="200" y2="310" stroke="#6B7280" stroke-width="3"/>
+  <circle cx="200" cy="315" r="8" fill="#6B7280"/>
+  <!-- Inner content -->
+  <rect x="155" y="155" width="90" height="70" rx="8" fill="#3B82F6" opacity="0.1"/>
+  <text x="200" y="195" text-anchor="middle" font-family="system-ui" font-size="18" fill="#3B82F6" font-weight="700">BADGE</text>
+  <text x="200" y="380" text-anchor="middle" font-family="system-ui" font-size="14" fill="#3B82F6" font-weight="600">Square Badge</text>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" rx="24" fill="#F0FDF4"/>
+  <ellipse cx="200" cy="350" rx="60" ry="8" fill="#DCFCE7"/>
+  <!-- Badge circle -->
+  <circle cx="200" cy="190" r="90" fill="white" stroke="#10B981" stroke-width="3"/>
+  <!-- Pin -->
+  <line x1="200" y1="280" x2="200" y2="320" stroke="#6B7280" stroke-width="3"/>
+  <circle cx="200" cy="325" r="8" fill="#6B7280"/>
+  <!-- Star inside -->
+  <polygon points="200,140 212,170 245,170 218,188 228,218 200,200 172,218 182,188 155,170 188,170" fill="#FBBF24" stroke="#F59E0B" stroke-width="2"/>
+  <text x="200" y="380" text-anchor="middle" font-family="system-ui" font-size="14" fill="#10B981" font-weight="600">Pin Badge</text>
+</svg>

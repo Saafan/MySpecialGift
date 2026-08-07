@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" rx="24" fill="#FFF7ED"/>
+  <ellipse cx="200" cy="350" rx="70" ry="8" fill="#FED7AA"/>
+  <!-- Die-cut sticker shape -->
+  <path d="M200 100 L240 140 L280 140 L250 180 L270 220 L220 210 L200 250 L180 210 L130 220 L150 180 L120 140 L160 140 Z" fill="white" stroke="#F97316" stroke-width="3"/>
+  <!-- Inner design -->
+  <text x="200" y="180" text-anchor="middle" font-family="system-ui" font-size="24" fill="#F97316" font-weight="700">DIE</text>
+  <text x="200" y="205" text-anchor="middle" font-family="system-ui" font-size="24" fill="#F97316" font-weight="700">CUT</text>
+  <text x="200" y="380" text-anchor="middle" font-family="system-ui" font-size="14" fill="#F97316" font-weight="600">Die-Cut Stickers</text>
+</svg>

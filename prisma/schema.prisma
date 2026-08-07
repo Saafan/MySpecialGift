@@ -1,0 +1,219 @@
+// MyLovelyGift V2 schema.
+//
+// Deliberate decisions (see Docs/reverse-engineering for the V1 failures each one answers):
+// - Money is integer cents. V1 computed money with IEEE-754 doubles (SEC-19).
+// - Single tenant. V1's schema-only multi-tenancy carried zero traffic and produced
+//   three unscoped-endpoint security bugs (SEC-15).
+// - OrderItem snapshots product name/price at order time and holds only a plain
+//   nullable designId reference, so deleting a design can never 500 an order
+//   (V1 had an onDelete: Restrict FK that did exactly that).
+// - Sessions are server-side rows keyed by the SHA-256 of a random bearer token;
+//   identity is never read from a client-supplied header (V1's x-user-id, SEC-01/02).
+// - Every foreign key and hot query path is indexed (V1 had zero non-unique indexes).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum DesignStatus {
+  DRAFT
+  ORDERED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(CUSTOMER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions Session[]
+  designs  Design[]
+  uploads  Upload[]
+  cart     Cart?
+  orders   Order[]
+
+  @@map("users")
+}
+
+model Session {
+  // SHA-256 hex digest of the bearer token; the raw token only ever lives in the cookie.
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Category {
+  id   String @id @default(uuid())
+  // Slug is the join key into the code-owned geometry module (src/lib/geometry.ts).
+  // Geometry lives in exactly one place; V1 had two conflicting copies (seed vs code).
+  slug String @unique
+  name String
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  slug        String        @unique
+  name        String
+  description String
+  priceCents  Int
+  currency    String        @default("USD")
+  status      ProductStatus @default(ACTIVE)
+  imageUrl    String
+  // [{ name: string, hex: string }]
+  colors      Json          @default("[]")
+  categoryId  String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  category  Category   @relation(fields: [categoryId], references: [id])
+  designs   Design[]
+  cartItems CartItem[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@map("products")
+}
+
+model Design {
+  id            String       @id @default(uuid())
+  name          String
+  userId        String
+  productId     String
+  schemaVersion Int          @default(1)
+  canvasData    Json
+  thumbnailUrl  String?
+  status        DesignStatus @default(DRAFT)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product    @relation(fields: [productId], references: [id])
+  cartItems CartItem[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@index([productId])
+  @@map("designs")
+}
+
+model Upload {
+  id        String   @id @default(uuid())
+  userId    String
+  key       String   @unique
+  filename  String
+  mimeType  String
+  size      Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("uploads")
+}
+
+model Cart {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  designId  String
+  productId String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  design  Design  @relation(fields: [designId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, designId])
+  @@index([cartId])
+  @@index([designId])
+  @@index([productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  number          Int         @unique @default(autoincrement())
+  userId          String
+  status          OrderStatus @default(PENDING)
+  subtotalCents   Int
+  taxCents        Int
+  shippingCents   Int
+  totalCents      Int
+  currency        String      @default("USD")
+  shippingAddress Json
+  paymentRef      String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id])
+  items OrderItem[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String  @id @default(uuid())
+  orderId        String
+  // Plain reference, not a FK: the snapshot below keeps the order renderable forever.
+  designId       String?
+  productName    String
+  categorySlug   String
+  unitPriceCents Int
+  quantity       Int
+  thumbnailUrl   String?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_items")
+}

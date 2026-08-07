@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" fill="none">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF7ED"/><stop offset="1" stop-color="#FFEDD5"/></linearGradient></defs>
+  <rect width="300" height="400" fill="url(#bg)"/>
+  <circle cx="150" cy="200" r="92" fill="#fff" stroke="#E5E7EB" stroke-width="2.5"/>
+  <circle cx="150" cy="200" r="76" fill="#FFEDD5"/>
+  <circle cx="150" cy="200" r="76" fill="none" stroke="#F97316" stroke-width="3" stroke-dasharray="6 6"/>
+  <text x="150" y="185" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="800" fill="#C2410C">100%</text>
+  <text x="150" y="208" text-anchor="middle" font-family="system-ui" font-size="16" font-weight="800" fill="#9A3412">ORGANIC</text>
+  <text x="150" y="230" text-anchor="middle" font-family="system-ui" font-size="10" fill="#C2410C">handmade with love</text>
+  <ellipse cx="150" cy="322" rx="85" ry="10" fill="#EA580C" opacity="0.15"/>
+</svg>

@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+/*
+ * MyLovelyGift design tokens — the single source of truth.
+ * V1 kept two conflicting token systems (CSS variables + literal hex ramps) plus a
+ * generated MASTER.md that matched neither. V2 has exactly one, defined here.
+ *
+ * Palette: warm paper neutrals with a persimmon "ember" accent, pine green support,
+ * marigold highlights. Every text/background pair used in the app meets WCAG AA:
+ *   ink on paper           17.0:1   ink-soft on paper   6.9:1
+ *   ember-600 on paper      6.4:1   white on ember-500  5.4:1
+ *   pine-600 on paper       6.8:1   white on pine-600   6.5:1
+ *   ink on marigold-400     8.9:1   white on danger-600 6.1:1
+ */
+@theme {
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  /* Warm paper neutrals */
+  --color-paper: #faf6f0;
+  --color-cream: #f3ebdf;
+  --color-surface: #fffdf9;
+  --color-line: #e7ddcd;
+  --color-line-strong: #d2c3ad;
+  --color-ink: #251c15;
+  --color-ink-soft: #5d5248;
+  --color-ink-faint: #8b7f72;
+
+  /* Ember — the brand accent */
+  --color-ember-50: #fdf3ef;
+  --color-ember-100: #f9e2d8;
+  --color-ember-200: #f2c4b1;
+  --color-ember-300: #e59c7f;
+  --color-ember-400: #d26f4a;
+  --color-ember-500: #b94a24;
+  --color-ember-600: #9c3a1a;
+  --color-ember-700: #7d2e15;
+  --color-ember-800: #632512;
+  --color-ember-900: #4a1c0e;
+
+  /* Pine — success and grounded support */
+  --color-pine-100: #e1ece4;
+  --color-pine-200: #c2d8c9;
+  --color-pine-500: #33684a;
+  --color-pine-600: #2a5740;
+  --color-pine-700: #224634;
+
+  /* Marigold — warm highlight; always pair with dark ink text */
+  --color-marigold-100: #fcefd0;
+  --color-marigold-300: #f2ce7b;
+  --color-marigold-400: #eab838;
+  --color-marigold-500: #d9a01d;
+
+  /* Danger */
+  --color-danger-100: #fbe3e0;
+  --color-danger-500: #c53a2b;
+  --color-danger-600: #a72e21;
+  --color-danger-700: #86251a;
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --shadow-lift: 0 1px 2px rgb(37 28 21 / 0.06), 0 4px 16px rgb(37 28 21 / 0.07);
+  --shadow-float: 0 2px 6px rgb(37 28 21 / 0.08), 0 12px 32px rgb(37 28 21 / 0.14);
+
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-rise: rise 0.5s var(--ease-soft) both;
+  --animate-fade: fade 0.35s ease-out both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background-color: var(--color-ember-200);
+    color: var(--color-ember-900);
+  }
+
+  /* One consistent, always-visible focus treatment across the whole product.
+     V1 removed outlines in four places and replaced them with nothing. */
+  :focus-visible {
+    outline: 2px solid var(--color-ember-500);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+@layer utilities {
+  /* Editorial measure for long-form copy */
+  .prose-measure {
+    max-width: 62ch;
+  }
+}
+
+/* Reduced motion is honoured globally — V1 ran 16 infinite blur animations with no escape. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" rx="24" fill="#F8F0FF"/>
+  <ellipse cx="180" cy="320" rx="80" ry="12" fill="#E8D5F5"/>
+  <!-- Mug body -->
+  <rect x="120" y="140" width="140" height="160" rx="16" fill="white" stroke="#7C3AED" stroke-width="3"/>
+  <!-- Mug handle -->
+  <path d="M260 180 C300 180 310 240 260 260" stroke="#7C3AED" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Steam -->
+  <path d="M160 130 Q165 110 160 90" stroke="#C4B5FD" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M180 125 Q185 105 180 85" stroke="#C4B5FD" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M200 130 Q205 110 200 90" stroke="#C4B5FD" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Heart decoration -->
+  <path d="M175 220 C175 200 200 200 190 220 C180 200 205 200 205 220 L190 245 Z" fill="#EC4899" opacity="0.6"/>
+  <text x="200" y="370" text-anchor="middle" font-family="system-ui" font-size="14" fill="#7C3AED" font-weight="600">White Mug</text>
+</svg>

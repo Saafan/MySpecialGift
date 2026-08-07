@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" fill="none">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FDF2F8"/><stop offset="1" stop-color="#FAE8FF"/></linearGradient></defs>
+  <rect width="300" height="400" fill="url(#bg)"/>
+  <path d="M110 95 L75 115 L55 165 L88 182 L95 160 L95 320 L205 320 L205 160 L212 182 L245 165 L225 115 L190 95 Q170 112 150 112 Q130 112 110 95 Z" fill="#1E1B4B" stroke="#312E81" stroke-width="2.5"/>
+  <path d="M110 95 Q130 112 150 112 Q170 112 190 95" stroke="#312E81" stroke-width="2.5" fill="none"/>
+  <text x="150" y="195" text-anchor="middle" font-family="system-ui" font-size="20" font-weight="800" fill="#E879F9">FEST</text>
+  <text x="150" y="220" text-anchor="middle" font-family="system-ui" font-size="20" font-weight="800" fill="#67E8F9">2026</text>
+  <path d="M115 245 l8 14 16 3 -11 11 2 16 -15 -7 -15 7 2 -16 -11 -11 16 -3 z" fill="#FBBF24" opacity="0.9"/>
+  <circle cx="185" cy="255" r="9" fill="#E879F9" opacity="0.7"/>
+</svg>

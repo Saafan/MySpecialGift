@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" rx="24" fill="#F0F8FF"/>
+  <ellipse cx="200" cy="350" rx="90" ry="10" fill="#E0E8F5"/>
+  <!-- T-shirt body -->
+  <path d="M140 150 L140 320 L260 320 L260 150 L230 130 L170 130 Z" fill="white" stroke="#0EA5E9" stroke-width="3"/>
+  <!-- Sleeves -->
+  <path d="M140 150 L100 180 L110 210 L140 190" fill="white" stroke="#0EA5E9" stroke-width="3"/>
+  <path d="M260 150 L300 180 L290 210 L260 190" fill="white" stroke="#0EA5E9" stroke-width="3"/>
+  <!-- Collar -->
+  <path d="M170 130 Q200 155 230 130" stroke="#0EA5E9" stroke-width="3" fill="none"/>
+  <!-- Star decoration -->
+  <polygon points="200,200 208,220 230,220 212,232 218,252 200,240 182,252 188,232 170,220 192,220" fill="#FBBF24" opacity="0.7"/>
+  <text x="200" y="380" text-anchor="middle" font-family="system-ui" font-size="14" fill="#0EA5E9" font-weight="600">Classic Tee</text>
+</svg>

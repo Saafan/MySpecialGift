@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" rx="24" fill="#FDF2F8"/>
+  <ellipse cx="200" cy="350" rx="90" ry="10" fill="#FCE7F3"/>
+  <!-- T-shirt body premium -->
+  <path d="M140 150 L140 320 L260 320 L260 150 L230 130 L170 130 Z" fill="white" stroke="#EC4899" stroke-width="3"/>
+  <path d="M140 150 L100 180 L110 210 L140 190" fill="white" stroke="#EC4899" stroke-width="3"/>
+  <path d="M260 150 L300 180 L290 210 L260 190" fill="white" stroke="#EC4899" stroke-width="3"/>
+  <path d="M170 130 Q200 155 230 130" stroke="#EC4899" stroke-width="3" fill="none"/>
+  <!-- Premium badge -->
+  <rect x="165" y="200" width="70" height="25" rx="12" fill="#7C3AED" opacity="0.8"/>
+  <text x="200" y="217" text-anchor="middle" font-family="system-ui" font-size="11" fill="white" font-weight="700">PREMIUM</text>
+  <text x="200" y="380" text-anchor="middle" font-family="system-ui" font-size="14" fill="#EC4899" font-weight="600">Premium Tee</text>
+</svg>

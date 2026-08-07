@@ -1,0 +1,41 @@
+# 01 — Executive Summary
+
+[← Index](./00-index.md)
+
+## What this project is
+
+MyLovelyGift is a **web-based custom-product design and e-commerce platform**: users pick a physical product (mug, t-shirt, sticker, pin badge), design artwork for it in a Canva-style 2D canvas editor, see it rendered live on a photorealistic 3D model of the product, and (nominally) buy it. It is a **Turborepo monorepo with npm workspaces** containing three packages: a Next.js 14 frontend (`apps/web`), a NestJS 10 + Prisma + PostgreSQL backend (`apps/api`), and a shared TypeScript types package (`packages/types`) — declared at `package.json:6-9`.
+
+The product positioning is explicitly "Gen Alpha / Gen Z" — bright purple/cyan/orange palette, emoji-heavy copy, playful microcopy like "No cap, it's fire" (`apps/web/src/components/layout/footer.tsx:19`). The domain model supports multi-tenancy from the ground up: every catalogue and order table carries a `tenantId` foreign key (`apps/api/prisma/schema.prisma:11-27`).
+
+## Who it serves
+
+Two audiences per `.github/copilot-instructions.md:43-44`: consumers designing personalised gifts, and merchants running catalogues on shared infrastructure. Only the consumer path has any UI; there is no admin or merchant interface anywhere in the tree.
+
+## Technical health, in one paragraph
+
+**The 3D preview and canvas editor are genuinely good; almost everything else is a facade.** `apps/web/src/lib/product-3d.ts` (679 lines) is a carefully built Babylon.js scene with a lathe-turned mug, procedural cotton weave, IBL lighting, an on-demand render loop, and hand-tuned geometry constants that are documented as needing to stay numerically in sync with the 2D artboard aspect ratios (`apps/web/src/lib/product-3d.ts:167-177`). The Fabric.js editor supports text, eight shapes, uploads, stock images, backgrounds, layers, undo/redo, zoom/pan, and multi-select, with real defensive engineering behind it. But the commerce layer around that editor is not wired up: the frontend never calls the product, template, design, or order APIs it has a client for (`apps/web/src/lib/api.ts:27-73` — `productsApi`, `templatesApi`, `designsApi`, `ordersApi`, `assetsApi` are exported and imported by zero files in `apps/web/src`), checkout simulates order placement with a timer, and the backend — which is well tested at 146 passing unit tests — has **zero authentication enforcement**, trusting a client-supplied `x-user-id` header for every ownership check. The repository has no version control, no CI, and one of its three test suites cannot start.
+
+## The five things anyone must know before touching this
+
+1. **There is no git history and no CI.** `git rev-parse --is-inside-work-tree` → `fatal: not a git repository`; there is no `.git` directory and no `.github/workflows/`. You have no bisect, no blame, no rollback, and no automated gate. Any change you make is unrecoverable unless you back the tree up first. Also note `.gitignore:48` excludes `apps/api/prisma/migrations/` — if version control is ever initialised as-is, the entire migration history will be lost.
+
+2. **`x-user-id` is the entire authorization model, and it is a client-supplied header.** `DesignsService.findOne` compares `design.userId !== userId` (`apps/api/src/modules/designs/designs.service.ts:19`) and `OrdersService.findOne` compares `order.userId !== userId` (`apps/api/src/modules/orders/orders.service.ts:29`) — but `userId` arrives from `@Headers("x-user-id")` with no verification (`apps/api/src/modules/designs/designs.controller.ts:21`). `AuthService.generateToken` (`apps/api/src/modules/auth/auth.service.ts:110-121`) issues an HMAC token, but **no code anywhere verifies it** — there is no `verifyToken`, no guard, no `canActivate`. Changing the header value to another user's ID reads and deletes their data.
+
+3. **The frontend's product catalogue is three separate hardcoded copies that already disagree.** `apps/web/src/app/page.tsx:33-62` (4 items), `apps/web/src/app/(shop)/products/page.tsx:11-20` (8 items), and `apps/web/src/app/(shop)/products/[id]/page.tsx:41-166` (8 items) each duplicate the catalogue. Product `2` is "15oz Black Mug" at $14.99 in the listing but the homepage calls product `2` "Classic Tee" at $24.99 (`apps/web/src/app/page.tsx:43-47`). A fourth copy lives in the database seed (`apps/api/prisma/seed.ts:107-140`) with only four products and different names.
+
+4. **Several pieces of odd-looking code are scar tissue. Do not "clean them up."** `FabricObject.customProperties = ["id", "selectable", "evented"]` at `apps/web/src/components/editor/editor-canvas.tsx:29` exists because Fabric does not serialise those flags, so the artboard became draggable after undo. The 60 ms `setTimeout` before creating the Babylon engine (`apps/web/src/components/editor/editor-3d-preview.tsx:58`) exists because React StrictMode's double-effect corrupted the `.env` IBL shader compile and the scene rendered black. The SVG rasterisation step in `apps/web/src/lib/fabric-objects.ts:40-51` exists because Fabric fails to paint vector sources on the live canvas. The full inventory is in [13 — Historical Bug Report](./13-historical-bug-report.md#defensive-code-inventory).
+
+5. **Only one of three test suites is trustworthy.** `apps/api` passes 15 suites / 146 tests (verified by running `npx jest --ci`). `packages/types` passes 17 tests. `apps/web` **cannot start** — `apps/web/jest.config.ts:9` writes `["@swc/jest"]` where Jest's TS types require a 2-tuple, so `readConfigFileAndSetRootDir` throws `TS2322` and zero tests execute. The E2E suite additionally targets `http://localhost:3001` (`playwright.config.ts:12,23`) while `npm run dev:web` starts Next.js on its default port 3000, and its assertions reference product names, templates, and mock data that no longer exist in the code.
+
+## The three biggest risks
+
+| # | Risk | Why it is the biggest | Evidence |
+|---|------|----------------------|----------|
+| **1** | **Total absence of server-side authorization** — any user can read, modify, or delete any other user's designs and orders, and can set arbitrary prices on orders | The backend is the only place a real security boundary could exist, and there is none. `OrdersController.create` accepts `unitPrice` straight from the request body and writes it to the database (`apps/api/src/modules/orders/orders.controller.ts:33`, `apps/api/src/modules/orders/orders.service.ts:47-53`), so an attacker sets any price they like. Combined with the forged-`x-user-id` IDOR, the entire data model is open. | [16 — Security Findings, SEC-01/02/03](./16-security-findings.md) |
+| **2** | **No version control** — there is no way to revert a bad change, attribute a decision, or recover a deleted file | Everything else in this report becomes harder to fix safely because there is no undo. It also means the QA history reconstructed in [13](./13-historical-bug-report.md) is the *only* institutional memory that exists, and it lives in two markdown files that are already partially inaccurate. | `git rev-parse` → `fatal: not a git repository`; no `.git` in the recursive census |
+| **3** | **The shipped product does not do what it claims** — checkout takes a card number, validates it, shows "Order placed successfully! 🎉", and throws it away | This is a user-trust and potentially legal exposure if deployed. The card fields are collected into React state (`apps/web/src/app/(shop)/checkout/page.tsx:29-34`), the UI asserts "Your payment info is encrypted and secure" (`apps/web/src/app/(shop)/checkout/page.tsx:307`), and then `await new Promise((r) => setTimeout(r, 1000))` runs and the cart is cleared (`apps/web/src/app/(shop)/checkout/page.tsx:377-380`). No order is created, no payment processor is contacted, and no record survives. | [12 — Feature Inventory, F-07](./12-feature-inventory.md#f-07--checkout) |
+
+## Verdict for a five-minute reader
+
+This is a **high-fidelity prototype**, not a product. The editor and 3D preview are production-quality and worth preserving. The commerce path, the auth layer, and the entire operational envelope (version control, CI, tests, deployment) are either missing or simulated. Treat every screen outside `/editor/*` as a mockup until proven otherwise, and do not deploy this to a public network in its current state.
