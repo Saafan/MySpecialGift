@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" rx="24" fill="#faf6f0"/>
+  <ellipse cx="190" cy="318" rx="78" ry="12" fill="#e7dccb"/>
+  <rect x="118" y="128" width="148" height="168" rx="18" fill="#fffdf9" stroke="#251c15" stroke-width="3"/>
+  <path d="M266 168c36 0 48 52 0 78" stroke="#251c15" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M168 168h48" stroke="#b94a24" stroke-width="3" stroke-linecap="round"/>
+  <path d="M176 188h32" stroke="#eab838" stroke-width="3" stroke-linecap="round"/>
+  <path d="M300 150c28 8 36 48 8 62" stroke="#251c15" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="312" cy="214" r="7" fill="#b94a24"/>
+  <text x="200" y="368" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#251c15">Mug with spoon</text>
+</svg>

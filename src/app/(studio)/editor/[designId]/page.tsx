@@ -4,6 +4,12 @@ import { db } from "@/server/db";
 import { getCurrentUser } from "@/server/auth/session";
 import { getProductBySlug } from "@/server/catalog";
 import { isProductCategory, type ProductCategory } from "@/lib/geometry";
+import {
+  choiceForTemplate,
+  resolveUnitPriceCents,
+  sanitizeSelection,
+  type ProductSelection,
+} from "@/lib/product-options";
 import { getTemplateMeta } from "@/lib/template-meta";
 import { parseDesignPayload, type DesignPayload } from "@/lib/editor/design-io";
 import { EditorLoader } from "@/components/editor/editor-loader";
@@ -15,6 +21,7 @@ interface EditorContext {
   designId: string | null;
   initialName: string;
   product: { id: string; slug: string; name: string; priceCents: number };
+  selection: ProductSelection;
   category: ProductCategory;
   serverPayload: DesignPayload | null;
   templateId: string | null;
@@ -23,6 +30,8 @@ interface EditorContext {
 async function resolveNewDesign(
   productSlug: string | undefined,
   templateParam: string | undefined,
+  sizeParam: string | undefined,
+  choiceParam: string | undefined,
 ): Promise<EditorContext> {
   if (!productSlug) redirect("/products");
 
@@ -34,6 +43,10 @@ async function resolveNewDesign(
   // V1's product pages emitted ids that matched nothing, silently.
   const templateMeta = templateParam ? getTemplateMeta(templateParam) : undefined;
   const templateId = templateMeta && templateMeta.category === category ? templateMeta.id : null;
+  const selection = sanitizeSelection(product.options, {
+    sizeId: sizeParam,
+    choiceId: choiceParam ?? choiceForTemplate(templateId),
+  });
 
   return {
     designId: null,
@@ -42,8 +55,9 @@ async function resolveNewDesign(
       id: product.id,
       slug: product.slug,
       name: product.name,
-      priceCents: product.priceCents,
+      priceCents: resolveUnitPriceCents(product.priceCents, product.options, selection),
     },
+    selection,
     category,
     serverPayload: null,
     templateId,
@@ -64,6 +78,8 @@ async function resolveExistingDesign(designId: string): Promise<EditorContext> {
   if (!design || design.userId !== user.id) notFound();
   if (!isProductCategory(design.product.category.slug)) notFound();
 
+  const selection = sanitizeSelection(design.product.options, design.selection);
+
   return {
     designId: design.id,
     initialName: design.name,
@@ -71,8 +87,13 @@ async function resolveExistingDesign(designId: string): Promise<EditorContext> {
       id: design.product.id,
       slug: design.product.slug,
       name: design.product.name,
-      priceCents: design.product.priceCents,
+      priceCents: resolveUnitPriceCents(
+        design.product.priceCents,
+        design.product.options,
+        selection,
+      ),
     },
+    selection,
     category: design.product.category.slug,
     serverPayload: parseDesignPayload(design.canvasData),
     templateId: null,
@@ -84,7 +105,7 @@ export default async function EditorPage({
   searchParams,
 }: {
   params: Promise<{ designId: string }>;
-  searchParams: Promise<{ product?: string; template?: string }>;
+  searchParams: Promise<{ product?: string; template?: string; size?: string; choice?: string }>;
 }) {
   const { designId } = await params;
   const query = await searchParams;
@@ -92,7 +113,7 @@ export default async function EditorPage({
 
   const context =
     designId === "new"
-      ? await resolveNewDesign(query.product, query.template)
+      ? await resolveNewDesign(query.product, query.template, query.size, query.choice)
       : await resolveExistingDesign(designId);
 
   return (

@@ -4,12 +4,13 @@ import Image from "next/image";
 import { Search, SearchX } from "lucide-react";
 import { listCategories, listProducts, type CatalogSort } from "@/server/catalog";
 import { formatCents } from "@/server/pricing";
+import { hasSizeUpcharge } from "@/lib/product-options";
 import { cn } from "@/lib/utils";
 import { SortSelect } from "./sort-select";
 
 export const metadata: Metadata = {
   title: "Shop",
-  description: "Pick a blank canvas — mugs, tees, stickers and badges, all customisable.",
+  description: "Mugs, canvas, tees, bottles, and a few smaller things you can put a feeling on.",
 };
 
 export default async function ProductsPage({
@@ -46,14 +47,15 @@ export default async function ProductsPage({
           Pick your blank canvas
         </h1>
         <p className="mt-3 text-lg text-ink-soft">
-          Every one of these ships with a live editor and a 3D preview. Choose the
-          thing; we&apos;ll help with the art.
+          Mugs, wall art, a tee, a bottle, a chocolate box. Every one ships with a
+          live editor. Choose the thing; we&apos;ll help with the art.
         </p>
       </div>
 
       {/* Search — a plain GET form; the URL is the state */}
-      <form action="/products" className="mt-8 flex max-w-md gap-2" role="search">
+      <form action="/products" className="mt-8 flex max-w-md min-w-0 gap-2" role="search">
         {activeCategory && <input type="hidden" name="category" value={activeCategory} />}
+        {params.sort && <input type="hidden" name="sort" value={params.sort} />}
         <div className="relative flex-1">
           <Search
             aria-hidden
@@ -67,7 +69,7 @@ export default async function ProductsPage({
             type="search"
             name="q"
             defaultValue={query}
-            placeholder="Search mugs, tees, stickers…"
+            placeholder="Search mugs, canvas, tees…"
             className="h-11 w-full rounded-md border border-line-strong bg-surface pl-10 pr-4 text-sm text-ink placeholder:text-ink-faint focus:border-ember-500"
           />
         </div>
@@ -145,7 +147,10 @@ export default async function ProductsPage({
                     {product.category.name}
                   </p>
                   <p className="mt-1 font-semibold text-ink">{product.name}</p>
-                  <p className="mt-1 text-sm text-ink-soft">{formatCents(product.priceCents)}</p>
+                  <p className="mt-1 text-sm text-ink-soft">
+                    {hasSizeUpcharge(product.options) ? "from " : ""}
+                    {formatCents(product.priceCents)}
+                  </p>
                 </div>
               </Link>
             </li>

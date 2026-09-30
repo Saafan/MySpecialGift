@@ -19,7 +19,10 @@ const SORT_ORDERINGS = {
 } as const;
 
 export async function listCategories() {
-  return db.category.findMany({ orderBy: { slug: "asc" } });
+  return db.category.findMany({
+    where: { products: { some: { status: "ACTIVE" } } },
+    orderBy: { position: "asc" },
+  });
 }
 
 export async function listProducts(filters: CatalogFilters = {}) {

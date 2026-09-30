@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import { db } from "@/server/db";
-import { templatesForCategory } from "@/lib/template-meta";
+import { templatesGroupedForCategory } from "@/lib/template-meta";
 import { isProductCategory } from "@/lib/geometry";
 
 export const metadata: Metadata = {
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default async function TemplatesPage() {
   const categories = await db.category.findMany({
-    orderBy: { slug: "asc" },
+    orderBy: { position: "asc" },
     include: {
       products: {
         where: { status: "ACTIVE" },
@@ -30,16 +30,15 @@ export default async function TemplatesPage() {
           Blank pages are overrated
         </h1>
         <p className="mt-3 text-lg text-ink-soft">
-          Open any of these in the editor and swap in your words, your photos, your
-          colours. Every template links to a real product, and everything stays
-          editable.
+          Pick a product, open a folder — Birthdays, Anniversaries, and the rest —
+          then make it yours. Everything stays editable.
         </p>
       </div>
 
       {categories.map((category) => {
         const defaultProduct = category.products[0];
         if (!defaultProduct || !isProductCategory(category.slug)) return null;
-        const templates = templatesForCategory(category.slug);
+        const groups = templatesGroupedForCategory(category.slug);
 
         return (
           <section key={category.id} className="mt-14" aria-labelledby={`heading-${category.slug}`}>
@@ -59,7 +58,6 @@ export default async function TemplatesPage() {
             </div>
 
             <ul className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-              {/* Start fresh */}
               <li>
                 <Link
                   href={`/editor/new?product=${defaultProduct.slug}`}
@@ -73,32 +71,52 @@ export default async function TemplatesPage() {
                   </span>
                 </Link>
               </li>
-
-              {templates.map((template) => (
-                <li key={template.id}>
-                  <Link
-                    href={`/editor/new?product=${defaultProduct.slug}&template=${template.id}`}
-                    className="group block h-full rounded-lg border bg-surface shadow-lift transition-all duration-300 hover:-translate-y-1 hover:shadow-float"
-                  >
-                    <div className="rounded-t-lg bg-cream/70 p-4">
-                      <Image
-                        src={template.thumbnailUrl}
-                        alt=""
-                        width={300}
-                        height={400}
-                        className="h-auto w-full transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="p-3.5">
-                      <p className="text-sm font-semibold text-ink">{template.name}</p>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-ink-soft">
-                        {template.tagline}
-                      </p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
             </ul>
+
+            {groups.map(({ folder, templates }) => (
+              <section
+                key={folder.id}
+                className="mt-8"
+                aria-labelledby={`folder-${category.slug}-${folder.id}`}
+              >
+                <div className="mb-4">
+                  <h3
+                    id={`folder-${category.slug}-${folder.id}`}
+                    className="font-display text-lg font-semibold text-ink"
+                  >
+                    {folder.name}
+                  </h3>
+                  <p className="text-sm text-ink-soft">{folder.tagline}</p>
+                </div>
+                <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+                  {templates.map((template) => (
+                    <li key={template.id}>
+                      <Link
+                        href={`/editor/new?product=${defaultProduct.slug}&template=${template.id}`}
+                        className="group block h-full rounded-lg border bg-surface shadow-lift transition-all duration-300 hover:-translate-y-1 hover:shadow-float"
+                      >
+                        <div className="overflow-hidden rounded-t-lg border-b border-line bg-paper">
+                          <Image
+                            src={template.thumbnailUrl}
+                            alt=""
+                            width={300}
+                            height={400}
+                            unoptimized
+                            className="h-auto w-full transition-transform duration-300 group-hover:scale-105"
+                          />
+                        </div>
+                        <div className="p-3.5">
+                          <p className="text-sm font-semibold text-ink">{template.name}</p>
+                          <p className="mt-0.5 line-clamp-2 text-xs text-ink-soft">
+                            {template.tagline}
+                          </p>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
           </section>
         );
       })}

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { CloudRainWind } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WhatsAppHelpNote } from "@/components/layout/whatsapp-help";
 
 /**
  * Global error boundary. V1 had none anywhere — a WebGL failure or a corrupt
@@ -32,6 +33,7 @@ export default function GlobalError({
       <Button onClick={reset} className="mt-8">
         Try again
       </Button>
+      <WhatsAppHelpNote className="mt-6" />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { WhatsAppFab } from "@/components/layout/whatsapp-help";
 
 /**
  * Shared shell for every shopping/browsing page. V1 declared route groups but
@@ -8,12 +9,13 @@ import { Footer } from "@/components/layout/footer";
  */
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <Navbar />
       <main id="main" className="flex-1">
         {children}
       </main>
       <Footer />
+      <WhatsAppFab />
     </div>
   );
 }

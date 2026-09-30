@@ -30,10 +30,12 @@ export function createArtboard(width: number, height: number): Rect {
     width,
     height,
     fill: "#ffffff",
+    stroke: undefined,
+    strokeWidth: 0,
     selectable: false,
     evented: false,
     hoverCursor: "default",
-    shadow: new Shadow({ color: "rgba(0,0,0,0.1)", blur: 16, offsetX: 0, offsetY: 4 }),
+    shadow: new Shadow({ color: "rgba(0,0,0,0.08)", blur: 18, offsetX: 0, offsetY: 6 }),
   });
 }
 
@@ -154,12 +156,24 @@ export function exportArtboardDataUrl(
   options?: { multiplier?: number; format?: "png" | "jpeg" },
 ) {
   const bounds = getArtboardBounds(canvas);
-  return canvas.toDataURL({
-    format: options?.format ?? "png",
-    multiplier: options?.multiplier ?? 1,
-    left: bounds.left,
-    top: bounds.top,
-    width: bounds.width,
-    height: bounds.height,
-  });
+  const artboard = getArtboard(canvas);
+  const prevShadow = artboard?.shadow;
+  const prevStroke = artboard?.stroke;
+  const prevStrokeWidth = artboard?.strokeWidth;
+  // Drop the drop-shadow and any hairline stroke so they cannot bake into the
+  // print wrap as a dark rim around the mug.
+  artboard?.set({ shadow: null, stroke: undefined, strokeWidth: 0 });
+  try {
+    return canvas.toDataURL({
+      format: options?.format ?? "png",
+      quality: options?.format === "jpeg" ? 0.92 : 1,
+      multiplier: options?.multiplier ?? 1,
+      left: bounds.left,
+      top: bounds.top,
+      width: bounds.width,
+      height: bounds.height,
+    });
+  } finally {
+    artboard?.set({ shadow: prevShadow, stroke: prevStroke, strokeWidth: prevStrokeWidth });
+  }
 }

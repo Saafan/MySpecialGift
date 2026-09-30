@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" rx="24" fill="#faf6f0"/>
+  <ellipse cx="200" cy="292" rx="110" ry="16" fill="#e7dccb"/>
+  <rect x="96" y="108" width="208" height="168" rx="22" fill="#fffdf9" stroke="#251c15" stroke-width="3"/>
+  <rect x="116" y="128" width="168" height="128" rx="14" fill="#f9e2d8"/>
+  <circle cx="200" cy="192" r="28" fill="#b94a24"/>
+  <text x="200" y="360" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#251c15">Acrylic coaster</text>
+</svg>

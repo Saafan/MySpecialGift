@@ -1,4 +1,4 @@
-import { FabricImage, type Canvas as FabricCanvas, type FabricObject } from "fabric";
+import { FabricImage, Rect, type Canvas as FabricCanvas, type FabricObject } from "fabric";
 import { ensureArtboardAtBack, getArtboardBounds } from "@/lib/editor/artboard";
 
 /**
@@ -85,6 +85,50 @@ export async function addImageFromUrl(
     scaleX: scale,
     scaleY: scale,
     objectCaching: false,
+  });
+  fabricImg.setCoords();
+
+  canvas.add(fabricImg);
+  ensureArtboardAtBack(canvas);
+  canvas.setActiveObject(fabricImg);
+  canvas.requestRenderAll();
+  return fabricImg;
+}
+
+/** Place an image covering a box (photo-slot replacement). */
+export async function placeImageCovering(
+  canvas: FabricCanvas,
+  src: string,
+  box: { left: number; top: number; width: number; height: number; angle?: number },
+) {
+  const url =
+    typeof window !== "undefined" && src.startsWith("/")
+      ? `${window.location.origin}${src}`
+      : src;
+
+  const source = await loadImageSource(url);
+  const naturalW =
+    source instanceof HTMLCanvasElement ? source.width : source.naturalWidth || box.width;
+  const naturalH =
+    source instanceof HTMLCanvasElement ? source.height : source.naturalHeight || box.height;
+  const scale = Math.min(box.width / naturalW, box.height / naturalH);
+  const radius = Math.min(14, Math.min(box.width, box.height) * 0.06);
+
+  const fabricImg = new FabricImage(source, {
+    ...CENTER_ORIGIN,
+    left: box.left,
+    top: box.top,
+    angle: box.angle ?? 0,
+    scaleX: scale,
+    scaleY: scale,
+    objectCaching: false,
+    clipPath: new Rect({
+      ...CENTER_ORIGIN,
+      width: box.width / scale,
+      height: box.height / scale,
+      rx: radius / scale,
+      ry: radius / scale,
+    }),
   });
   fabricImg.setCoords();
 

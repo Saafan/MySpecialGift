@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * MyLovelyGift design tokens — the single source of truth.
+ * My Special Gift design tokens — the single source of truth.
  * V1 kept two conflicting token systems (CSS variables + literal hex ramps) plus a
  * generated MASTER.md that matched neither. V2 has exactly one, defined here.
  *
@@ -98,6 +98,7 @@
 
   html {
     scroll-behavior: smooth;
+    overflow-x: clip;
   }
 
   body {

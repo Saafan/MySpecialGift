@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Compass } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { WhatsAppHelpNote } from "@/components/layout/whatsapp-help";
 
 export default function NotFound() {
   return (
@@ -21,6 +22,7 @@ export default function NotFound() {
           Browse products
         </Link>
       </div>
+      <WhatsAppHelpNote className="mt-6" />
     </div>
   );
 }

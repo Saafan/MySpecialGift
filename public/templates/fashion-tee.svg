@@ -1,10 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" fill="none">
-  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FAF5FF"/><stop offset="1" stop-color="#F3E8FF"/></linearGradient>
-  <linearGradient id="tx" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#A855F7"/><stop offset="1" stop-color="#EC4899"/></linearGradient></defs>
-  <rect width="300" height="400" fill="url(#bg)"/>
-  <path d="M110 95 L75 115 L55 165 L88 182 L95 160 L95 320 L205 320 L205 160 L212 182 L245 165 L225 115 L190 95 Q170 112 150 112 Q130 112 110 95 Z" fill="#fff" stroke="#D1D5DB" stroke-width="2.5"/>
-  <path d="M110 95 Q130 112 150 112 Q170 112 190 95" stroke="#D1D5DB" stroke-width="2.5" fill="none"/>
-  <text x="150" y="210" text-anchor="middle" font-family="Georgia,serif" font-size="24" font-style="italic" font-weight="700" fill="url(#tx)">vibes</text>
-  <line x1="115" y1="228" x2="185" y2="228" stroke="url(#tx)" stroke-width="2"/>
-  <text x="150" y="252" text-anchor="middle" font-family="system-ui" font-size="9" letter-spacing="4" fill="#9333EA">EST. 2026</text>
+  <rect width="300" height="400" fill="#faf6f0"/>
+  <circle cx="28" cy="28" r="5" fill="#b94a24"/>
+  <ellipse cx="150" cy="342" rx="92" ry="11" fill="#d2c3ad" opacity="0.5"/>
+  <path d="M108 138 L108 312 L192 312 L192 138 L168 122 L132 122 Z" fill="#fffdf9" stroke="#251c15" stroke-width="2"/>
+  <path d="M108 138 L72 164 L82 188 L108 168" fill="#fffdf9" stroke="#251c15" stroke-width="2"/>
+  <path d="M192 138 L228 164 L218 188 L192 168" fill="#fffdf9" stroke="#251c15" stroke-width="2"/>
+  <path d="M132 122 Q150 144 168 122" stroke="#251c15" stroke-width="2" fill="none"/>
+  <text x="150" y="222" text-anchor="middle" font-family="Georgia, serif" font-size="24" font-weight="700" fill="#251c15">yours.</text>
+  <circle cx="150" cy="242" r="3.5" fill="#b94a24"/>
+  <text x="150" y="266" text-anchor="middle" font-family="Georgia, serif" font-size="9" font-style="italic" fill="#5d5248">that is the gift</text>
 </svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" rx="24" fill="#faf6f0"/>
+  <ellipse cx="200" cy="320" rx="70" ry="10" fill="#d5e6ea"/>
+  <path d="M132 150h136l-10 150a28 28 0 0 1-28 24h-60a28 28 0 0 1-28-24l-10-150z" fill="#e7f4f6" stroke="#251c15" stroke-width="3"/>
+  <path d="M148 188h104" stroke="#b94a24" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="200" cy="148" rx="68" ry="14" fill="#c4a574" stroke="#251c15" stroke-width="3"/>
+  <rect x="192" y="118" width="16" height="22" rx="3" fill="#8d6a43"/>
+  <path d="M248 168v96" stroke="#9ec9d4" stroke-width="4" stroke-linecap="round"/>
+  <text x="200" y="368" text-anchor="middle" font-family="Georgia, serif" font-size="15" fill="#251c15">Glass mug</text>
+</svg>

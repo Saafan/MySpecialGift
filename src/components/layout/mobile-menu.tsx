@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Menu } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { NavLink } from "@/components/layout/nav-link";
+import { WHATSAPP_HREF } from "@/lib/brand";
+import { WhatsAppGlyph } from "@/components/layout/whatsapp-help";
 
 export function MobileMenu({ signedIn }: { signedIn: boolean }) {
   const [open, setOpen] = useState(false);
@@ -23,6 +25,9 @@ export function MobileMenu({ signedIn }: { signedIn: boolean }) {
         <nav aria-label="Mobile" className="flex flex-col gap-1">
           <NavLink href="/products" onNavigate={close}>
             Shop
+          </NavLink>
+          <NavLink href="/bouquet" onNavigate={close}>
+            Bouquets
           </NavLink>
           <NavLink href="/templates" onNavigate={close}>
             Templates
@@ -51,6 +56,16 @@ export function MobileMenu({ signedIn }: { signedIn: boolean }) {
               Sign in
             </Link>
           )}
+          <a
+            href={WHATSAPP_HREF}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={close}
+            className="mt-3 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2.5 text-center text-sm font-semibold text-pine-700 hover:bg-pine-100"
+          >
+            <WhatsAppGlyph className="h-4 w-4" />
+            WhatsApp help
+          </a>
         </nav>
       </DialogContent>
     </Dialog>

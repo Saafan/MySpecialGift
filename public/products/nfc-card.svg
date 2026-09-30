@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" rx="24" fill="#faf6f0"/>
+  <rect x="48" y="130" width="304" height="176" rx="18" fill="#fffdf9" stroke="#251c15" stroke-width="3" transform="rotate(-6 200 218)"/>
+  <text x="200" y="200" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#b94a24">for you</text>
+  <text x="200" y="228" text-anchor="middle" font-family="Georgia, serif" font-size="13" font-style="italic" fill="#5d5248">tap the card</text>
+  <circle cx="292" cy="168" r="8" fill="#eab838"/>
+  <text x="200" y="368" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#251c15">NFC card</text>
+</svg>

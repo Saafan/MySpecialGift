@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" fill="none">
+  <rect width="300" height="400" fill="#faf6f0"/>
+  <circle cx="28" cy="28" r="5" fill="#b94a24"/>
+  <ellipse cx="150" cy="342" rx="92" ry="11" fill="#d2c3ad" opacity="0.5"/>
+  <path d="M108 138 L108 312 L192 312 L192 138 L168 122 L132 122 Z" fill="#fffdf9" stroke="#251c15" stroke-width="2"/>
+  <path d="M108 138 L72 164 L82 188 L108 168" fill="#fffdf9" stroke="#251c15" stroke-width="2"/>
+  <path d="M192 138 L228 164 L218 188 L192 168" fill="#fffdf9" stroke="#251c15" stroke-width="2"/>
+  <path d="M132 122 Q150 144 168 122" stroke="#251c15" stroke-width="2" fill="none"/>
+  <text x="150" y="216" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#251c15">A  +  B</text>
+  <circle cx="150" cy="236" r="3.5" fill="#b94a24"/>
+  <text x="150" y="260" text-anchor="middle" font-family="Georgia, serif" font-size="11" font-style="italic" fill="#5d5248">est. 2016</text>
+</svg>

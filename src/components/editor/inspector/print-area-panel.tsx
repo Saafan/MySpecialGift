@@ -8,10 +8,19 @@ import { NumberInput } from "./number-input";
 import { Button } from "@/components/ui/button";
 
 const CATEGORY_HINTS: Record<string, string> = {
-  cup: "The full area wraps almost all the way around the mug, leaving a gap at the handle.",
+  cup: "The print covers the mug wall end to end — rim to base and all the way around, with a gap only at the handle.",
+  bottle: "The print wraps the bottle the same way it wraps a mug.",
   "t-shirt": "The print sits on the chest. Smaller sizes read as a pocket print.",
   sticker: "The whole area is die-cut — edge to edge is fair game.",
   badge: "The design fills the round face; corners get trimmed by the circle.",
+  canvas: "The print covers the canvas face. Pick the physical size on the product page.",
+  nfc: "The print fills the front of the card.",
+  phone: "The print covers the back of the cover.",
+  coaster: "The print covers the coaster, edge to edge.",
+  puzzle: "The print becomes the puzzle picture.",
+  pillow: "The print covers the pillow face.",
+  bag: "The print sits on the front of the tote.",
+  chocolate: "The print is the note on the lid. The chocolates inside stay as packed.",
 };
 
 export function PrintAreaPanel() {
@@ -31,7 +40,7 @@ export function PrintAreaPanel() {
       <div>
         <h3 className="font-display text-sm font-semibold text-ink">Print area</h3>
         <p className="mt-1 text-[11px] leading-relaxed text-ink-soft">
-          {CATEGORY_HINTS[category]}
+          {CATEGORY_HINTS[category] ?? "The print covers this face, edge to edge."}
         </p>
       </div>
 

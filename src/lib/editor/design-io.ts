@@ -44,8 +44,8 @@ export function parseDesignPayload(raw: unknown): DesignPayload | null {
 }
 
 /* ------------------------------------------------------------------ */
-/* Guest drafts — small JSON only (uploads require an account, so no   */
-/* base64 payloads can enter a draft; V1's quota-bomb path is closed). */
+/* Guest drafts — JSON only. Guest uploads live on the server (10-image cap)
+ * and are referenced by URL, so drafts never embed base64 payloads. */
 /* ------------------------------------------------------------------ */
 
 const DRAFT_PREFIX = "mlg:draft:v1:";

@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";
 import { getCurrentUser } from "@/server/auth/session";
 import { parseDesignPayload } from "@/lib/editor/design-io";
+import { sanitizeSelection } from "@/lib/product-options";
 import {
   deleteFile,
   newStorageKey,
@@ -26,11 +28,19 @@ export type DesignActionResult =
   | { ok: true; designId: string; thumbnailUrl?: string | null }
   | { ok: false; error: string };
 
+const selectionSchema = z
+  .object({
+    sizeId: z.string().max(40).optional(),
+    choiceId: z.string().max(40).optional(),
+  })
+  .optional();
+
 const saveSchema = z.object({
   name: z.string().trim().min(1).max(120),
   productId: z.string().uuid(),
   payload: z.unknown(),
   thumbnailDataUrl: z.string().startsWith("data:image/png;base64,").optional(),
+  selection: selectionSchema,
 });
 
 async function storeThumbnail(
@@ -73,6 +83,7 @@ export async function createDesign(input: {
   productId: string;
   payload: unknown;
   thumbnailDataUrl?: string;
+  selection?: { sizeId?: string; choiceId?: string };
 }): Promise<DesignActionResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Sign in to save designs" };
@@ -95,6 +106,7 @@ export async function createDesign(input: {
       productId: product.id,
       canvasData: JSON.parse(payload.json),
       thumbnailUrl,
+      selection: sanitizeSelection(product.options, parsed.data.selection) as Prisma.InputJsonValue,
     },
   });
 
@@ -168,5 +180,7 @@ export async function deleteDesign(designId: string): Promise<DesignActionResult
   }
 
   revalidatePath("/designs");
+  revalidatePath("/cart");
+  revalidatePath("/checkout");
   return { ok: true, designId };
 }

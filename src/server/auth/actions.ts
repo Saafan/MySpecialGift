@@ -7,6 +7,7 @@ import { db } from "@/server/db";
 import { hashPassword, verifyPassword } from "@/server/auth/password";
 import { createSession, destroySession } from "@/server/auth/session";
 import { rateLimit } from "@/server/rate-limit";
+import { safeReturnTo } from "@/lib/safe-return-to";
 
 export type AuthFormState = {
   error?: string;
@@ -26,12 +27,6 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
   returnTo: z.string().optional(),
 });
-
-/** Only allow same-site relative redirects — never an absolute URL from the query string. */
-function safeReturnTo(value: string | undefined, fallback: string): string {
-  if (value && value.startsWith("/") && !value.startsWith("//")) return value;
-  return fallback;
-}
 
 async function clientKey(scope: string): Promise<string> {
   const headerStore = await headers();

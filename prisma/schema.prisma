@@ -1,4 +1,4 @@
-// MyLovelyGift V2 schema.
+// My Special Gift schema.
 //
 // Deliberate decisions (see Docs/reverse-engineering for the V1 failures each one answers):
 // - Money is integer cents. V1 computed money with IEEE-754 doubles (SEC-19).
@@ -80,8 +80,9 @@ model Category {
   id   String @id @default(uuid())
   // Slug is the join key into the code-owned geometry module (src/lib/geometry.ts).
   // Geometry lives in exactly one place; V1 had two conflicting copies (seed vs code).
-  slug String @unique
-  name String
+  slug     String @unique
+  name     String
+  position Int    @default(0)
 
   products Product[]
 
@@ -94,11 +95,13 @@ model Product {
   name        String
   description String
   priceCents  Int
-  currency    String        @default("USD")
+  currency    String        @default("EGP")
   status      ProductStatus @default(ACTIVE)
   imageUrl    String
   // [{ name: string, hex: string }]
   colors      Json          @default("[]")
+  // { sizes?: { id, label, extraCents }[], choices?: { id, name, hex? }[], choiceLabel?: string, includes?: string[] }
+  options     Json          @default("{}")
   categoryId  String
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -120,6 +123,8 @@ model Design {
   schemaVersion Int          @default(1)
   canvasData    Json
   thumbnailUrl  String?
+  // { sizeId?: string, choiceId?: string } — chosen on the product page, priced server-side.
+  selection     Json         @default("{}")
   status        DesignStatus @default(DRAFT)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -135,16 +140,18 @@ model Design {
 
 model Upload {
   id        String   @id @default(uuid())
-  userId    String
+  userId    String?
+  guestId   String?
   key       String   @unique
   filename  String
   mimeType  String
   size      Int
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([guestId])
   @@map("uploads")
 }
 
@@ -211,6 +218,7 @@ model OrderItem {
   unitPriceCents Int
   quantity       Int
   thumbnailUrl   String?
+  optionsLabel   String @default("")
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 

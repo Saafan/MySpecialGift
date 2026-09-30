@@ -3,12 +3,14 @@ import Image from "next/image";
 import { ArrowRight, PenLine, Package, Truck } from "lucide-react";
 import { db } from "@/server/db";
 import { formatCents } from "@/server/pricing";
+import { hasSizeUpcharge } from "@/lib/product-options";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default async function HomePage() {
   const categories = await db.category.findMany({
-    orderBy: { slug: "asc" },
+    where: { products: { some: { status: "ACTIVE" } } },
+    orderBy: { position: "asc" },
     include: {
       products: {
         where: { status: "ACTIVE" },
@@ -26,9 +28,9 @@ export default async function HomePage() {
   });
 
   const collage = [
-    { src: "/products/mug-white.svg", alt: "", rotate: "-rotate-6", offset: "translate-y-6" },
-    { src: "/products/tshirt-premium.svg", alt: "", rotate: "rotate-3", offset: "-translate-y-2" },
-    { src: "/products/badge-pin.svg", alt: "", rotate: "-rotate-2", offset: "translate-y-10" },
+    { src: "/products/hero-mug-printed.jpg", alt: "", rotate: "-rotate-6", offset: "translate-y-6" },
+    { src: "/products/hero-tee-printed.jpg", alt: "", rotate: "rotate-3", offset: "-translate-y-2" },
+    { src: "/products/hero-canvas-tableau.jpg", alt: "", rotate: "-rotate-2", offset: "translate-y-10" },
   ];
 
   return (
@@ -39,15 +41,15 @@ export default async function HomePage() {
           <p className="mb-4 inline-block rounded-full border border-ember-200 bg-ember-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-ember-700">
             Designed by you, printed by us
           </p>
-          <h1 className="font-display text-5xl font-semibold leading-[1.05] text-ink md:text-6xl lg:text-7xl">
+          <h1 className="font-display text-4xl font-semibold leading-[1.05] text-ink sm:text-5xl md:text-6xl lg:text-7xl">
             Make something
             <br />
             they&apos;ll <em className="text-ember-600">keep</em>.
           </h1>
           <p className="prose-measure mt-6 text-lg leading-relaxed text-ink-soft">
-            Mugs, tees, stickers and badges — designed in your browser with a live
-            3D preview, then printed and shipped to your door. No design degree
-            required. Mild sentimentality encouraged.
+            Mugs, wall art, tees, bottles, and the smaller things — a coaster, a
+            card, a box of chocolate. Designed in your browser, then printed and
+            sent to the door.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-3">
             <Link href="/products" className={buttonVariants({ size: "lg" })}>
@@ -73,7 +75,7 @@ export default async function HomePage() {
                 index === 1 && "z-10 shadow-float",
               )}
             >
-              <Image src={item.src} alt="" width={400} height={400} className="h-auto w-full" />
+              <Image src={item.src} alt="" width={300} height={400} className="h-auto w-full object-contain" />
             </div>
           ))}
         </div>
@@ -87,7 +89,7 @@ export default async function HomePage() {
               <h2 className="font-display text-3xl font-semibold text-ink md:text-4xl">
                 Choose your canvas
               </h2>
-              <p className="mt-2 text-ink-soft">Four blank things, waiting for a good idea.</p>
+              <p className="mt-2 text-ink-soft">Pick a blank thing. We&apos;ll help with the art.</p>
             </div>
             <Link
               href="/products"
@@ -141,7 +143,7 @@ export default async function HomePage() {
               icon: Package,
               step: "01",
               title: "Pick a thing",
-              copy: "A mug for the coffee-dependent, a tee for the loud one, stickers for the laptop that has opinions.",
+              copy: "A mug, a canvas, a tee, a bottle — or the chocolate box when words are not quite enough.",
             },
             {
               icon: PenLine,
@@ -153,7 +155,7 @@ export default async function HomePage() {
               icon: Truck,
               step: "03",
               title: "We print & ship",
-              copy: "Checkout takes a minute. We handle the printing, the packing, and the part where it shows up at their door.",
+              copy: "Checkout takes a minute. We handle the printing, the packing, and the part where it shows up at your/their door.",
             },
           ].map((item) => (
             <div key={item.step} className="relative border-t-2 border-ember-200 pt-6">
@@ -200,7 +202,10 @@ export default async function HomePage() {
                   {product.category.name}
                 </p>
                 <p className="mt-1 font-semibold text-ink">{product.name}</p>
-                <p className="mt-1 text-sm text-ink-soft">{formatCents(product.priceCents)}</p>
+                <p className="mt-1 text-sm text-ink-soft">
+                  {hasSizeUpcharge(product.options) ? "from " : ""}
+                  {formatCents(product.priceCents)}
+                </p>
               </div>
             </Link>
           ))}

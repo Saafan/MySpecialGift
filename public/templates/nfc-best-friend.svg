@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" fill="none">
+  <rect width="300" height="400" fill="#f3ebdf"/>
+  <rect x="36" y="118" width="228" height="150" rx="16" fill="#fffdf9" stroke="#251c15" stroke-width="2"/>
+  <circle cx="150" cy="158" r="6" fill="#b94a24"/>
+  <text x="150" y="188" text-anchor="middle" font-family="Georgia, serif" font-size="13" font-style="italic" fill="#b94a24">my person</text>
+  <text x="150" y="220" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#251c15">best friend</text>
+</svg>

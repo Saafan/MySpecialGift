@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { useFabricCanvas, type FabricCanvasConfig } from "./use-fabric-canvas";
+import { PhotoSlotListener } from "./photo-slot-listener";
 
 export function EditorCanvas(props: FabricCanvasConfig) {
   const canvasElRef = useRef<HTMLCanvasElement>(null);
@@ -19,8 +20,9 @@ export function EditorCanvas(props: FabricCanvasConfig) {
         data-testid="editor-canvas"
         className="block h-full w-full"
         role="img"
-        aria-label="Design canvas. Use the panels to add text, shapes and images; arrow keys nudge the selected object."
+        aria-label="Design canvas. Use the panels to add text, shapes and images; arrow keys nudge the selected object. Photo frames can be clicked to upload."
       />
+      <PhotoSlotListener />
     </div>
   );
 }

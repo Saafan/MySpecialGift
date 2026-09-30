@@ -1,13 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" fill="none">
-  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EFF6FF"/><stop offset="1" stop-color="#DBEAFE"/></linearGradient>
-  <linearGradient id="ph" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7DD3FC"/><stop offset="1" stop-color="#38BDF8"/></linearGradient></defs>
-  <rect width="300" height="400" fill="url(#bg)"/>
-  <ellipse cx="150" cy="330" rx="95" ry="14" fill="#0EA5E9" opacity="0.15"/>
-  <rect x="75" y="130" width="130" height="180" rx="14" fill="#fff" stroke="#E5E7EB" stroke-width="2"/>
-  <path d="M205 170 C250 170 258 250 205 268" stroke="#fff" stroke-width="14" fill="none" stroke-linecap="round"/>
-  <path d="M205 170 C250 170 258 250 205 268" stroke="#E5E7EB" stroke-width="2" fill="none"/>
-  <rect x="88" y="165" width="104" height="80" rx="6" fill="url(#ph)"/>
-  <circle cx="113" cy="190" r="9" fill="#FDE68A"/>
-  <path d="M88 230 L120 205 L140 222 L160 200 L192 230 L192 245 L88 245 Z" fill="#16A34A" opacity="0.85"/>
-  <text x="140" y="270" text-anchor="middle" font-family="cursive" font-size="13" fill="#0369A1">My memories</text>
+  <rect width="300" height="400" fill="#faf6f0"/>
+  <circle cx="28" cy="28" r="5" fill="#b94a24"/>
+  <ellipse cx="148" cy="332" rx="88" ry="11" fill="#d2c3ad" opacity="0.5"/>
+  <path d="M205 168 C248 168 256 248 205 266" stroke="#fffdf9" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M205 168 C248 168 256 248 205 266" stroke="#251c15" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <rect x="85" y="128" width="120" height="168" rx="16" fill="#fffdf9" stroke="#251c15" stroke-width="2"/>
+  <rect x="108" y="158" width="74" height="92" rx="8" fill="#f9e2d8" stroke="#d2c3ad" stroke-width="1.5"/>
+  <rect x="129" y="176" width="22" height="16" rx="3" fill="none" stroke="#5d5248" stroke-width="1.5"/>
+  <circle cx="140" cy="184" r="4" fill="none" stroke="#5d5248" stroke-width="1.5"/>
+  <rect x="144" y="173" width="6" height="3" rx="0.5" fill="#5d5248"/>
+  <text x="145" y="208" text-anchor="middle" font-family="Georgia, serif" font-size="8" fill="#251c15">Add a photo</text>
+  <text x="145" y="220" text-anchor="middle" font-family="Georgia, serif" font-size="7" font-style="italic" fill="#5d5248">Click to upload</text>
+  <text x="145" y="272" text-anchor="middle" font-family="Georgia, serif" font-size="13" fill="#251c15">kept.</text>
 </svg>

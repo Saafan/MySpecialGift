@@ -1,21 +1,27 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 /**
  * Idempotent seed — everything upserts on a natural key, so re-running is always
- * safe. (V1's seed used `create` for templates and duplicated them on every run.)
- *
- * This is the single product catalogue. V1 kept four diverging hardcoded copies
- * across three pages and the seed; product 2 was simultaneously a "Classic Tee"
- * and a "15oz Black Mug" depending on which page you were reading.
+ * safe. Products that drop out of this list are archived rather than deleted,
+ * so old designs and orders keep their references.
  */
 const prisma = new PrismaClient();
 
 const categories = [
-  { slug: "cup", name: "Mugs & Cups" },
-  { slug: "t-shirt", name: "T-Shirts" },
-  { slug: "sticker", name: "Stickers" },
-  { slug: "badge", name: "Badges" },
+  { slug: "cup", name: "Mugs & Cups", position: 0 },
+  { slug: "canvas", name: "Wall Art", position: 1 },
+  { slug: "coaster", name: "Coasters", position: 2 },
+  { slug: "chocolate", name: "Chocolate", position: 3 },
+  { slug: "phone", name: "Phone Cases", position: 4 },
+  { slug: "bag", name: "Bags", position: 5 },
+  { slug: "bottle", name: "Bottles", position: 6 },
+  { slug: "t-shirt", name: "T-Shirts", position: 7 },
+  { slug: "puzzle", name: "Puzzles", position: 8 },
+  { slug: "pillow", name: "Pillows", position: 9 },
+  { slug: "nfc", name: "NFC Cards", position: 10 },
 ] as const;
+
+type ShopCategory = (typeof categories)[number]["slug"];
 
 type SeedProduct = {
   slug: string;
@@ -23,111 +29,186 @@ type SeedProduct = {
   description: string;
   priceCents: number;
   imageUrl: string;
-  category: (typeof categories)[number]["slug"];
+  category: ShopCategory;
   colors: { name: string; hex: string }[];
+  options?: Prisma.InputJsonValue;
 };
 
 const products: SeedProduct[] = [
   {
-    slug: "11oz-white-mug",
-    name: "11oz White Mug",
+    slug: "mug",
+    name: "Mug",
     description:
-      "The classic. Glossy ceramic with a wide wrap-around print area, dishwasher and microwave safe. Your art goes nearly all the way around — we keep a clean gap at the handle so nothing gets swallowed by the grip.",
-    priceCents: 1299,
-    imageUrl: "/products/mug-white.svg",
+      "A classic ceramic mug. Your art wraps the wall from rim to base, with a clean gap only at the handle.",
+    priceCents: 19900,
+    imageUrl: "/products/mug-white.jpg",
     category: "cup",
-    colors: [
-      { name: "White", hex: "#FFFFFF" },
-      { name: "Cream", hex: "#F3EBDF" },
-    ],
+    colors: [{ name: "White", hex: "#FFFFFF" }],
   },
   {
-    slug: "15oz-black-mug",
-    name: "15oz Black Mug",
+    slug: "mug-with-spoon",
+    name: "Mug With Spoon",
     description:
-      "Bigger, bolder, and matte black. Light artwork pops beautifully on the dark glaze. Same wrap-around print band, a little more coffee.",
-    priceCents: 1499,
-    imageUrl: "/products/mug-black.svg",
+      "The wrap-around mug, with a spoon that stays with it. For cocoa, dessert, and anyone who is always looking for a spoon.",
+    priceCents: 24900,
+    imageUrl: "/products/mug-with-spoon.svg",
     category: "cup",
+    colors: [{ name: "White", hex: "#FFFFFF" }],
+  },
+  {
+    slug: "canvas-wall-art",
+    name: "Canvas Wall Art Tableau",
+    description:
+      "A stretched canvas tableau. The 30 × 40 cm size is 299 EGP. Step up to 40 × 50 cm or 50 × 60 cm when the wall deserves a bigger picture.",
+    priceCents: 29900,
+    imageUrl: "/products/canvas-tableau.jpg",
+    category: "canvas",
+    colors: [],
+    options: {
+      sizes: [
+        { id: "30x40", label: "30 cm × 40 cm", extraCents: 0 },
+        { id: "40x50", label: "40 cm × 50 cm", extraCents: 5000 },
+        { id: "50x60", label: "50 cm × 60 cm", extraCents: 10000 },
+      ],
+    },
+  },
+  {
+    slug: "round-glass-mug",
+    name: "Round Glass Mug with Bamboo Lid & Glass Straw",
+    description:
+      "A round glass mug with no handle, a bamboo lid, and a glass straw. The print sits on the glass so the drink still shows through around it.",
+    priceCents: 24900,
+    imageUrl: "/products/glass-mug.svg",
+    category: "cup",
+    colors: [{ name: "Clear glass", hex: "#E7F2F6" }],
+  },
+  {
+    slug: "acrylic-coaster",
+    name: "Acrylic Coaster",
+    description:
+      "A square acrylic coaster with a glossy face. One photograph or one joke, and the table stays free of rings.",
+    priceCents: 12900,
+    imageUrl: "/products/coaster.jpg",
+    category: "coaster",
+    colors: [],
+  },
+  {
+    slug: "chocolate-box",
+    name: "Chocolate Box",
+    description:
+      "A gift box you can put a note on. Inside: Ferrero Rocher (3 pieces), Galaxy, Cadbury, Kinder Bars, Kinder Bueno, and Milka.",
+    priceCents: 99900,
+    imageUrl: "/products/chocolate-box.jpg",
+    category: "chocolate",
+    colors: [],
+    options: {
+      includes: [
+        "Ferrero Rocher (3 pieces)",
+        "Galaxy",
+        "Cadbury",
+        "Kinder Bars",
+        "Kinder Bueno",
+        "Milka",
+      ],
+    },
+  },
+  {
+    slug: "iphone-cover",
+    name: "iPhone Cover",
+    description: "A slim iPhone cover. Your design prints edge to edge on the back.",
+    priceCents: 22900,
+    imageUrl: "/products/iphone-cover.jpg",
+    category: "phone",
+    colors: [],
+  },
+  {
+    slug: "tote-bag",
+    name: "Tote Bag",
+    description:
+      "A cotton tote with a generous front print. Market runs, books, and the bag they actually carry.",
+    priceCents: 19900,
+    imageUrl: "/products/tote-bag.jpg",
+    category: "bag",
+    colors: [{ name: "Natural", hex: "#F3EBDF" }],
+  },
+  {
+    slug: "thermal-bottle",
+    name: "Thermal Bottle",
+    description:
+      "A thermal bottle that holds the temperature they left it at. Choose black, red, white, green, blue, or orange.",
+    priceCents: 29900,
+    imageUrl: "/products/thermal-bottle.jpg",
+    category: "bottle",
     colors: [
       { name: "Black", hex: "#1F2937" },
-      { name: "Navy", hex: "#1E3A5F" },
-    ],
-  },
-  {
-    slug: "classic-cotton-tee",
-    name: "Classic Cotton Tee",
-    description:
-      "Midweight 100% combed cotton with a generous chest print area. Pre-shrunk, true to size, and soft enough to become the shirt they always reach for.",
-    priceCents: 2499,
-    imageUrl: "/products/tshirt-white.svg",
-    category: "t-shirt",
-    colors: [
+      { name: "Red", hex: "#DC2626" },
       { name: "White", hex: "#FFFFFF" },
-      { name: "Black", hex: "#1F2937" },
-      { name: "Heather Grey", hex: "#9CA3AF" },
-      { name: "Navy", hex: "#1E3A5F" },
+      { name: "Green", hex: "#16A34A" },
+      { name: "Blue", hex: "#2563EB" },
+      { name: "Orange", hex: "#EA580C" },
     ],
+    options: {
+      choiceLabel: "Colour",
+      choices: [
+        { id: "black", name: "Black", hex: "#1F2937" },
+        { id: "red", name: "Red", hex: "#DC2626" },
+        { id: "white", name: "White", hex: "#FFFFFF" },
+        { id: "green", name: "Green", hex: "#16A34A" },
+        { id: "blue", name: "Blue", hex: "#2563EB" },
+        { id: "orange", name: "Orange", hex: "#EA580C" },
+      ],
+    },
   },
   {
-    slug: "premium-tee",
-    name: "Premium Tee",
+    slug: "t-shirt",
+    name: "T-Shirt",
     description:
-      "Ring-spun cotton with a tailored fit and a buttery hand feel. The print sits smooth and matte — made for designs that deserve the good fabric.",
-    priceCents: 2999,
-    imageUrl: "/products/tshirt-premium.svg",
+      "A midweight tee with room for a chest print. Soft enough to become the shirt they always reach for.",
+    priceCents: 39900,
+    imageUrl: "/products/tshirt-white.jpg",
     category: "t-shirt",
-    colors: [
-      { name: "Bone", hex: "#F5F5F4" },
-      { name: "Charcoal", hex: "#374151" },
-      { name: "Sage", hex: "#86EFAC" },
-    ],
+    colors: [{ name: "White", hex: "#FFFFFF" }],
   },
   {
-    slug: "circle-sticker-pack",
-    name: "Circle Sticker Pack",
+    slug: "puzzle",
+    name: "Puzzle",
     description:
-      "A pack of ten matte vinyl circles, weatherproof and dishwasher safe. Laptops, water bottles, guitar cases — anywhere that needs more personality.",
-    priceCents: 499,
-    imageUrl: "/products/sticker-circle.svg",
-    category: "sticker",
-    colors: [{ name: "Matte White", hex: "#FFFFFF" }],
+      "A custom puzzle of a photo or a design you make here. Something to sit down and finish together.",
+    priceCents: 19900,
+    imageUrl: "/products/puzzle.jpg",
+    category: "puzzle",
+    colors: [],
   },
   {
-    slug: "die-cut-stickers",
-    name: "Die-Cut Stickers",
+    slug: "pillow",
+    name: "Pillow",
     description:
-      "Cut precisely to the outline of your design. Thick vinyl with an easy-peel back and colours that stay loud in the sun and the rain.",
-    priceCents: 699,
-    imageUrl: "/products/sticker-diecut.svg",
-    category: "sticker",
-    colors: [{ name: "Gloss White", hex: "#FFFFFF" }],
+      "A soft pillow with your print across the face. For the sofa, the bed, and the person who steals both.",
+    priceCents: 24900,
+    imageUrl: "/products/pillow.jpg",
+    category: "pillow",
+    colors: [{ name: "Ivory", hex: "#F7F1E8" }],
   },
   {
-    slug: "round-pin-badge",
-    name: "Round Pin Badge",
+    slug: "nfc-card",
+    name: "NFC Card",
     description:
-      "A 38mm classic pin-back badge with a mirror-gloss face. Small canvas, big statement — great in threes.",
-    priceCents: 699,
-    imageUrl: "/products/badge-pin.svg",
-    category: "badge",
-    colors: [
-      { name: "Silver Back", hex: "#D1D5DB" },
-      { name: "Gold Back", hex: "#FBBF24" },
-    ],
-  },
-  {
-    slug: "square-badge",
-    name: "Square Badge",
-    description:
-      "A rounded square badge with a satin finish and a sturdy clasp. The unexpected shape people ask about.",
-    priceCents: 799,
-    imageUrl: "/products/badge-square.svg",
-    category: "badge",
-    colors: [
-      { name: "Silver Back", hex: "#D1D5DB" },
-      { name: "White", hex: "#FFFFFF" },
-    ],
+      "A small card with a cozy design, made for a best friend, girlfriend, boyfriend, wife, mom, or dad. Pick who it is for, then make the front yours.",
+    priceCents: 14900,
+    imageUrl: "/products/nfc-card.jpg",
+    category: "nfc",
+    colors: [],
+    options: {
+      choiceLabel: "For",
+      choices: [
+        { id: "best-friend", name: "Best Friend", hex: "#C4A484" },
+        { id: "girlfriend", name: "Girlfriend", hex: "#E8A0BF" },
+        { id: "boyfriend", name: "Boyfriend", hex: "#7C9CBF" },
+        { id: "wife", name: "Wife", hex: "#C46B6B" },
+        { id: "mom", name: "Mom", hex: "#D4A574" },
+        { id: "dad", name: "Dad", hex: "#6B8F71" },
+      ],
+    },
   },
 ];
 
@@ -137,36 +218,35 @@ async function main() {
   for (const category of categories) {
     const row = await prisma.category.upsert({
       where: { slug: category.slug },
-      update: { name: category.name },
-      create: { slug: category.slug, name: category.name },
+      update: { name: category.name, position: category.position },
+      create: { slug: category.slug, name: category.name, position: category.position },
     });
     categoryIds[category.slug] = row.id;
   }
 
   for (const product of products) {
+    const data = {
+      name: product.name,
+      description: product.description,
+      priceCents: product.priceCents,
+      currency: "EGP",
+      imageUrl: product.imageUrl,
+      colors: product.colors,
+      options: product.options ?? {},
+      categoryId: categoryIds[product.category],
+      status: "ACTIVE" as const,
+    };
     await prisma.product.upsert({
       where: { slug: product.slug },
-      update: {
-        name: product.name,
-        description: product.description,
-        priceCents: product.priceCents,
-        imageUrl: product.imageUrl,
-        colors: product.colors,
-        categoryId: categoryIds[product.category],
-        status: "ACTIVE",
-      },
-      create: {
-        slug: product.slug,
-        name: product.name,
-        description: product.description,
-        priceCents: product.priceCents,
-        imageUrl: product.imageUrl,
-        colors: product.colors,
-        categoryId: categoryIds[product.category],
-        status: "ACTIVE",
-      },
+      update: data,
+      create: { slug: product.slug, ...data },
     });
   }
+
+  await prisma.product.updateMany({
+    where: { slug: { notIn: products.map((product) => product.slug) } },
+    data: { status: "ARCHIVED" },
+  });
 
   console.log(`Seeded ${categories.length} categories, ${products.length} products.`);
 }

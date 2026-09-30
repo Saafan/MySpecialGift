@@ -116,14 +116,14 @@ export function LayersPanel() {
               <button
                 onClick={() => move(obj, "up")}
                 aria-label={`Move ${name} forward`}
-                className="cursor-pointer rounded-sm p-1 text-ink-soft hover:bg-cream hover:text-ink"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-sm text-ink-soft hover:bg-cream hover:text-ink"
               >
                 <ArrowUp className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => move(obj, "down")}
                 aria-label={`Move ${name} backward`}
-                className="cursor-pointer rounded-sm p-1 text-ink-soft hover:bg-cream hover:text-ink"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-sm text-ink-soft hover:bg-cream hover:text-ink"
               >
                 <ArrowDown className="h-3.5 w-3.5" />
               </button>
@@ -131,7 +131,7 @@ export function LayersPanel() {
                 onClick={() => toggleVisibility(obj)}
                 aria-label={isHidden ? `Show ${name}` : `Hide ${name}`}
                 aria-pressed={isHidden}
-                className="cursor-pointer rounded-sm p-1 text-ink-soft hover:bg-cream hover:text-ink"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-sm text-ink-soft hover:bg-cream hover:text-ink"
               >
                 {isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               </button>

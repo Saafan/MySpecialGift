@@ -8,7 +8,22 @@
  * the same values. `src/lib/geometry.test.ts` asserts the mug invariant.
  */
 
-export type ProductCategory = "cup" | "t-shirt" | "sticker" | "badge";
+export type ProductCategory =
+  | "cup"
+  | "t-shirt"
+  | "sticker"
+  | "badge"
+  | "canvas"
+  | "coaster"
+  | "chocolate"
+  | "phone"
+  | "bag"
+  | "bottle"
+  | "puzzle"
+  | "pillow"
+  | "nfc";
+
+export type PreviewKind = "cup" | "t-shirt" | "sticker" | "badge" | "panel";
 
 export interface ArtboardSize {
   width: number;
@@ -18,19 +33,21 @@ export interface ArtboardSize {
 /**
  * Mug print-band geometry. Shared by the artboard (2D) and `buildMug` (3D).
  *
- * - bandBottom/bandTop: vertical extent of the printable band on the mug wall
- *   (above the base curve, below the rim).
+ * - bandBottom/bandTop: vertical extent of the printable band on the mug wall,
+ *   from just above the foot to just under the rim.
  * - handleGapDeg: angular gap left un-printed around the handle so artwork
- *   never wraps onto it.
+ *   never wraps onto it. Everywhere else is printable, end to end.
  *
  * The printable arc length is (1 - handleGapDeg/360) x 2*pi*avgBandRadius and
- * the band height is bandTop - bandBottom. Their ratio (~2.934) MUST equal the
- * cup artboard aspect ratio below, or artwork stretches on the 3D mug.
+ * the band height is bandTop - bandBottom. Their ratio MUST equal the cup
+ * artboard aspect ratio below, or artwork stretches on the 3D mug.
  */
 export const MUG_3D_PRINT = {
-  bandBottom: 0.34,
-  bandTop: 1.78,
-  handleGapDeg: 76,
+  bandBottom: 0.1,
+  bandTop: 1.98,
+  // Handle tube is ~14° of circumference at the wall; a few extra degrees keep
+  // the print from clipping the grip. 22° lands the band just before the handle.
+  handleGapDeg: 22,
 } as const;
 
 /**
@@ -82,15 +99,38 @@ export function mugBandAspectRatio(): number {
 
 /**
  * Print-area aspect ratios per product category:
- * - cup: wrap band, wider than tall (aspect derived from the 3D mug — see above)
+ * - cup / bottle: wrap band, wider than tall (aspect derived from the 3D mug)
  * - t-shirt: portrait chest print
- * - sticker / badge: square
+ * - sticker / badge / coaster / puzzle / pillow: square
+ * - canvas: 3:4 portrait (the 30 × 40 cm tableau)
+ * - nfc: credit-card landscape
  */
+const CUP_ARTBOARD_HEIGHT = 520;
+
+function cupArtboardSize(): ArtboardSize {
+  return {
+    width: Math.round(CUP_ARTBOARD_HEIGHT * mugBandAspectRatio()),
+    height: CUP_ARTBOARD_HEIGHT,
+  };
+}
+
+const CUP_SIZE = cupArtboardSize();
+const SQUARE: ArtboardSize = { width: 640, height: 640 };
+
 export const ARTBOARD_SIZES: Record<ProductCategory, ArtboardSize> = {
-  cup: { width: 1115, height: 380 },
+  cup: CUP_SIZE,
   "t-shirt": { width: 600, height: 760 },
-  sticker: { width: 640, height: 640 },
-  badge: { width: 640, height: 640 },
+  sticker: SQUARE,
+  badge: SQUARE,
+  canvas: { width: 600, height: 800 },
+  coaster: SQUARE,
+  chocolate: SQUARE,
+  phone: { width: 420, height: 840 },
+  bag: { width: 640, height: 760 },
+  bottle: CUP_SIZE,
+  puzzle: SQUARE,
+  pillow: SQUARE,
+  nfc: { width: 856, height: 540 },
 };
 
 export const CATEGORY_LABELS: Record<ProductCategory, string> = {
@@ -98,6 +138,15 @@ export const CATEGORY_LABELS: Record<ProductCategory, string> = {
   "t-shirt": "T-Shirt",
   sticker: "Sticker",
   badge: "Badge",
+  canvas: "Canvas",
+  coaster: "Coaster",
+  chocolate: "Chocolate Box",
+  phone: "Phone Cover",
+  bag: "Tote Bag",
+  bottle: "Bottle",
+  puzzle: "Puzzle",
+  pillow: "Pillow",
+  nfc: "NFC Card",
 };
 
 const CATEGORY_ALIASES: Record<string, ProductCategory> = {
@@ -113,6 +162,16 @@ const CATEGORY_ALIASES: Record<string, ProductCategory> = {
   stickers: "sticker",
   badge: "badge",
   badges: "badge",
+  canvas: "canvas",
+  coaster: "coaster",
+  chocolate: "chocolate",
+  phone: "phone",
+  bag: "bag",
+  tote: "bag",
+  bottle: "bottle",
+  puzzle: "puzzle",
+  pillow: "pillow",
+  nfc: "nfc",
 };
 
 export function resolveCategory(value: string | null | undefined): ProductCategory | null {
@@ -122,6 +181,25 @@ export function resolveCategory(value: string | null | undefined): ProductCatego
 
 export function isProductCategory(value: string): value is ProductCategory {
   return value in ARTBOARD_SIZES;
+}
+
+/** Which 3D mesh a category reuses. Bottles wrap like a mug; flat goods use a panel. */
+export function previewKind(category: ProductCategory): PreviewKind {
+  switch (category) {
+    case "cup":
+    case "bottle":
+      return "cup";
+    case "t-shirt":
+      return "t-shirt";
+    case "sticker":
+    case "coaster":
+    case "puzzle":
+      return "sticker";
+    case "badge":
+      return "badge";
+    default:
+      return "panel";
+  }
 }
 
 /* ------------------------------------------------------------------ */

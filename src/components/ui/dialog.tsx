@@ -49,7 +49,7 @@ export function DialogContent({
         {children}
         <DialogPrimitive.Close
           aria-label="Close dialog"
-          className="absolute right-4 top-4 rounded-md p-1.5 text-ink-soft hover:bg-cream hover:text-ink"
+          className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-md text-ink-soft hover:bg-cream hover:text-ink"
         >
           <X className="h-4 w-4" />
         </DialogPrimitive.Close>

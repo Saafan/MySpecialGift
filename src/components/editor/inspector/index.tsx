@@ -42,7 +42,7 @@ export function EditorInspector() {
   useCanvasVersion(canvas);
 
   return (
-    <div className="h-full w-72 shrink-0 overflow-y-auto border-l bg-surface p-4">
+    <div className="h-full w-full overflow-y-auto bg-surface p-4 lg:w-72 lg:shrink-0 lg:border-l">
       {canvas ? <InspectorBody canvas={canvas} /> : null}
     </div>
   );
@@ -181,14 +181,14 @@ function SingleObject({ canvas, object }: { canvas: FabricCanvas; object: Fabric
           <button
             onClick={duplicate}
             aria-label="Duplicate object"
-            className="cursor-pointer rounded-sm p-1.5 text-ink-soft hover:bg-cream hover:text-ink"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-sm text-ink-soft hover:bg-cream hover:text-ink"
           >
             <Copy className="h-4 w-4" />
           </button>
           <button
             onClick={remove}
             aria-label="Delete object"
-            className="cursor-pointer rounded-sm p-1.5 text-danger-600 hover:bg-danger-100/60"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-sm text-danger-600 hover:bg-danger-100/60"
           >
             <Trash2 className="h-4 w-4" />
           </button>

@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingBag } from "lucide-react";
+import { Layers, ShoppingBag, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { formatCents } from "@/lib/money";
+import { editorHref, type ProductSelection } from "@/lib/product-options";
+import { cn } from "@/lib/utils";
 import type { CartActionResult } from "@/server/cart/actions";
 import type { ProductCategory } from "@/lib/geometry";
 import { getDefaultPrintSize } from "@/lib/geometry";
@@ -23,6 +25,7 @@ import { EditorCanvas } from "./editor-canvas";
 import { EditorLeftPanel } from "./panels";
 import { EditorInspector } from "./inspector";
 import { Preview3D } from "./preview-3d";
+import { UploadProgressOverlay } from "./upload-progress-overlay";
 
 export interface EditorShellProps {
   designId: string | null;
@@ -34,6 +37,7 @@ export interface EditorShellProps {
     priceCents: number;
   };
   category: ProductCategory;
+  selection: ProductSelection;
   serverPayload: DesignPayload | null;
   templateId: string | null;
   isAuthenticated: boolean;
@@ -48,6 +52,7 @@ export function EditorShell({
   initialName,
   product,
   category,
+  selection,
   serverPayload,
   templateId,
   isAuthenticated,
@@ -55,6 +60,7 @@ export function EditorShell({
 }: EditorShellProps) {
   const router = useRouter();
   const [addingToCart, setAddingToCart] = useState(false);
+  const [mobileSheet, setMobileSheet] = useState<"tools" | "inspector" | null>(null);
   const designIdRef = useRef<string | null>(initialDesignId);
   const nameRef = useRef(initialName);
   const [displayName, setDisplayName] = useState(initialName);
@@ -62,15 +68,18 @@ export function EditorShell({
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savingRef = useRef(false);
 
-  // Resolve the effective starting payload once, on the client:
-  // an explicit template wins; otherwise a saved design; otherwise a guest
-  // draft left on this device (it survives the sign-in round trip).
+  // Resolve the effective starting payload once, on the client.
+  // Order: saved design → template deep-link → guest draft (sign-in recovery) → blank.
+  // Guest add-to-cart returnTo deliberately omits template= so the draft wins
+  // after auth; a fresh "start from template" link still applies the template.
   const [initialPayload] = useState<DesignPayload | null>(() => {
     if (serverPayload) return serverPayload;
-    if (templateId) return null;
     if (initialDesignId) return null;
+    if (templateId) return null;
     return loadGuestDraft(product.slug)?.payload ?? null;
   });
+  const effectiveTemplateId =
+    serverPayload || initialDesignId || initialPayload ? null : templateId;
 
   // Bootstrap the store for this mount, before the canvas initialises.
   const [bootstrapped] = useState(() => {
@@ -109,7 +118,17 @@ export function EditorShell({
 
   const persist = useCallback(
     async (options: { explicit: boolean }) => {
-      if (savingRef.current) return;
+      // Autosave may be mid-flight when the user hits Save / Add to cart.
+      // Returning early here used to drop the write, so Add to cart minted no
+      // design id and toasted "Save didn't finish". Explicit calls wait.
+      if (savingRef.current) {
+        if (!options.explicit) return;
+        const started = Date.now();
+        while (savingRef.current && Date.now() - started < 5_000) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        if (savingRef.current) return;
+      }
       const payload = buildPayload();
       if (!payload) return;
       const store = useEditorStore.getState();
@@ -133,7 +152,7 @@ export function EditorShell({
       savingRef.current = true;
       store.setSaveState("saving");
       try {
-        const thumbnailDataUrl = options.explicit ? makeThumbnail() : undefined;
+        const thumbnailDataUrl = makeThumbnail();
         const result = designIdRef.current
           ? await updateDesign({
               designId: designIdRef.current,
@@ -145,6 +164,7 @@ export function EditorShell({
               productId: product.id,
               payload,
               thumbnailDataUrl,
+              selection,
             });
 
         if (!result.ok) {
@@ -169,7 +189,7 @@ export function EditorShell({
         savingRef.current = false;
       }
     },
-    [buildPayload, isAuthenticated, makeThumbnail, product.id, product.slug],
+    [buildPayload, isAuthenticated, makeThumbnail, product.id, product.slug, selection],
   );
 
   /* Autosave: any history push marks the store dirty; we follow with a debounce.
@@ -203,14 +223,50 @@ export function EditorShell({
         e.preventDefault();
       }
     };
+    // beforeunload only covers tab close / hard navigation. Next.js <Link>
+    // clicks never fire it, so flush (or confirm) on in-app leave too.
+    const onDocumentClick = (e: MouseEvent) => {
+      if (!useEditorStore.getState().dirty) return;
+      const anchor = (e.target as Element | null)?.closest?.("a[href]");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#") || href.startsWith("javascript:")) return;
+      // Same-editor navigations (rare) can proceed; everything else needs a flush.
+      if (href.startsWith("/editor/")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      void (async () => {
+        await persist({ explicit: false });
+        if (useEditorStore.getState().dirty) {
+          const leave = window.confirm(
+            "You have unsaved changes. Leave the editor anyway?",
+          );
+          if (!leave) return;
+        }
+        if (href.startsWith("http") || href.startsWith("//")) {
+          window.location.assign(href);
+        } else {
+          router.push(href);
+        }
+      })();
+    };
+    const onPageHide = () => {
+      if (useEditorStore.getState().dirty) void persist({ explicit: false });
+    };
     window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, []);
+    window.addEventListener("pagehide", onPageHide);
+    document.addEventListener("click", onDocumentClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("click", onDocumentClick, true);
+    };
+  }, [persist, router]);
 
   /* Ctrl+S — explicit save */
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key.toLowerCase() === "s") {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
         void persist({ explicit: true });
       }
@@ -232,11 +288,12 @@ export function EditorShell({
 
   const handleAddToCart = useCallback(async () => {
     if (!isAuthenticated) {
-      // The guest draft is already on this device; it survives the sign-in trip.
-      void persist({ explicit: false });
+      // Persist first so the sign-in round trip can restore the exact canvas.
+      // returnTo omits template= — guest draft outranks a fresh template apply.
+      await persist({ explicit: false });
       toast.info("Sign in to add this to your cart — your draft is safe.");
       router.push(
-        `/login?returnTo=${encodeURIComponent(`/editor/new?product=${product.slug}`)}`,
+        `/login?returnTo=${encodeURIComponent(editorHref(product.slug, selection))}`,
       );
       return;
     }
@@ -259,7 +316,7 @@ export function EditorShell({
     } finally {
       setAddingToCart(false);
     }
-  }, [addToCartAction, isAuthenticated, persist, product.name, product.slug, router]);
+  }, [addToCartAction, isAuthenticated, persist, product.name, product.slug, router, selection]);
 
   const handleExport = useCallback(() => {
     const canvas = useEditorStore.getState().canvas;
@@ -278,7 +335,7 @@ export function EditorShell({
   if (!bootstrapped) return null;
 
   return (
-    <div className="flex h-screen flex-col bg-paper">
+    <div className="flex h-dvh flex-col overflow-hidden bg-paper">
       <EditorToolbar
         backHref={`/products/${product.slug}`}
         designName={displayName}
@@ -290,25 +347,78 @@ export function EditorShell({
           <button
             onClick={() => void handleAddToCart()}
             disabled={addingToCart}
-            className="flex h-9 cursor-pointer items-center gap-1.5 rounded-md bg-ember-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-ember-700 disabled:pointer-events-none disabled:opacity-60"
+            className="flex h-10 cursor-pointer items-center gap-1.5 rounded-md bg-ember-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-ember-700 disabled:pointer-events-none disabled:opacity-60 sm:h-9 sm:px-4"
           >
             <ShoppingBag className="h-3.5 w-3.5" />
-            {addingToCart ? "Adding…" : `Add to cart · ${formatCents(product.priceCents)}`}
+            <span className="sm:hidden">{addingToCart ? "Adding…" : "Cart"}</span>
+            <span className="hidden sm:inline">
+              {addingToCart ? "Adding…" : `Add to cart · ${formatCents(product.priceCents)}`}
+            </span>
           </button>
         }
       />
-      <div className="flex min-h-0 flex-1">
-        <EditorLeftPanel isAuthenticated={isAuthenticated} />
-        <main id="main" className="relative min-w-[300px] flex-1">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
+        <main id="main" className="relative flex min-h-0 min-w-0 flex-1 flex-col">
           <EditorCanvas
             category={category}
             initialPayload={initialPayload}
-            templateId={serverPayload ? null : templateId}
+            templateId={effectiveTemplateId}
           />
-          <Preview3D />
+          <Preview3D productSlug={product.slug} />
         </main>
-        <EditorInspector />
+        <div
+          className={cn(
+            "min-h-0 lg:order-first lg:flex",
+            mobileSheet === "tools"
+              ? "flex h-[min(55dvh,28rem)] border-t lg:h-auto lg:border-t-0"
+              : "hidden lg:flex",
+          )}
+        >
+          <EditorLeftPanel isAuthenticated={isAuthenticated} />
+        </div>
+        <div
+          className={cn(
+            "min-h-0 lg:flex",
+            mobileSheet === "inspector"
+              ? "flex h-[min(55dvh,28rem)] border-t lg:h-auto lg:border-t-0"
+              : "hidden lg:flex",
+          )}
+        >
+          <EditorInspector />
+        </div>
       </div>
+      <nav
+        aria-label="Editor panels"
+        className="flex shrink-0 border-t bg-paper pb-[env(safe-area-inset-bottom)] lg:hidden"
+      >
+        <button
+          type="button"
+          aria-pressed={mobileSheet === "tools"}
+          onClick={() => setMobileSheet((open) => (open === "tools" ? null : "tools"))}
+          className={cn(
+            "flex h-14 min-h-11 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold",
+            mobileSheet === "tools" ? "bg-ember-50 text-ember-700" : "text-ink-soft",
+          )}
+        >
+          <Layers className="h-4 w-4" aria-hidden />
+          Tools
+        </button>
+        <button
+          type="button"
+          aria-pressed={mobileSheet === "inspector"}
+          onClick={() =>
+            setMobileSheet((open) => (open === "inspector" ? null : "inspector"))
+          }
+          className={cn(
+            "flex h-14 min-h-11 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold",
+            mobileSheet === "inspector" ? "bg-ember-50 text-ember-700" : "text-ink-soft",
+          )}
+        >
+          <SlidersHorizontal className="h-4 w-4" aria-hidden />
+          Properties
+        </button>
+      </nav>
+      <UploadProgressOverlay />
     </div>
   );
 }

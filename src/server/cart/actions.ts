@@ -44,6 +44,7 @@ export async function addDesignToCart(designId: string): Promise<CartActionResul
   });
 
   revalidatePath("/cart");
+  revalidatePath("/checkout");
   return { ok: true };
 }
 
@@ -73,6 +74,7 @@ export async function setCartItemQuantity(
   }
 
   revalidatePath("/cart");
+  revalidatePath("/checkout");
   return { ok: true };
 }
 
@@ -90,5 +92,6 @@ export async function removeCartItem(itemId: string): Promise<CartActionResult> 
 
   await db.cartItem.delete({ where: { id: itemId } });
   revalidatePath("/cart");
+  revalidatePath("/checkout");
   return { ok: true };
 }

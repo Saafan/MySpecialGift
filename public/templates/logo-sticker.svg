@@ -1,10 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" fill="none">
-  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFBEB"/><stop offset="1" stop-color="#FEF9C3"/></linearGradient>
-  <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7C3AED"/><stop offset="1" stop-color="#06B6D4"/></linearGradient></defs>
-  <rect width="300" height="400" fill="url(#bg)"/>
-  <rect x="60" y="110" width="180" height="180" rx="28" fill="#fff" stroke="#E5E7EB" stroke-width="2.5" transform="rotate(-4 150 200)"/>
-  <circle cx="150" cy="185" r="38" fill="url(#lg)" transform="rotate(-4 150 200)"/>
-  <path d="M150 165 l7 14 15 2 -11 11 3 15 -14 -7 -14 7 3 -15 -11 -11 15 -2 z" fill="#fff" transform="rotate(-4 150 200)"/>
-  <text x="148" y="252" text-anchor="middle" font-family="system-ui" font-size="16" font-weight="800" fill="#312E81" transform="rotate(-4 150 200)">BRAND</text>
-  <ellipse cx="150" cy="320" rx="85" ry="10" fill="#CA8A04" opacity="0.15"/>
+  <rect width="300" height="400" fill="#faf6f0"/>
+  <circle cx="28" cy="28" r="5" fill="#b94a24"/>
+  <ellipse cx="150" cy="318" rx="78" ry="10" fill="#d2c3ad" opacity="0.45"/>
+  <circle cx="150" cy="200" r="88" fill="#fffdf9" stroke="#b94a24" stroke-width="7"/>
+  <text x="150" y="192" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#251c15">your</text>
+  <text x="150" y="220" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#251c15">mark</text>
 </svg>

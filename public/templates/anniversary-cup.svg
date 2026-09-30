@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" fill="none">
+  <rect width="300" height="400" fill="#f3ebdf"/>
+  <circle cx="28" cy="28" r="5" fill="#b94a24"/>
+  <ellipse cx="148" cy="332" rx="88" ry="11" fill="#d2c3ad" opacity="0.5"/>
+  <path d="M205 168 C248 168 256 248 205 266" stroke="#fffdf9" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M205 168 C248 168 256 248 205 266" stroke="#251c15" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <rect x="85" y="128" width="120" height="168" rx="16" fill="#fffdf9" stroke="#251c15" stroke-width="2"/>
+  <text x="145" y="188" text-anchor="middle" font-family="Georgia, serif" font-size="10" font-style="italic" fill="#9c3a1a">since the day</text>
+  <text x="145" y="220" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#251c15">Still yes.</text>
+  <line x1="122" y1="236" x2="168" y2="236" stroke="#b94a24" stroke-width="1.5"/>
+  <text x="145" y="258" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#5d5248">01  .  01</text>
+</svg>

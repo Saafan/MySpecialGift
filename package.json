@@ -1,8 +1,8 @@
 {
-  "name": "my-lovely-gift",
+  "name": "my-special-gift",
   "version": "2.0.0",
   "private": true,
-  "description": "MyLovelyGift V2 — design personalised gifts in a live 2D/3D editor and order them for real.",
+  "description": "My Special Gift (MySpecialGift) — design personalised gifts in a live 2D/3D editor and order them for real.",
   "engines": {
     "node": ">=20.0.0"
   },

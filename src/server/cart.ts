@@ -22,7 +22,7 @@ export async function getCartWithItems(userId: string) {
         orderBy: { createdAt: "asc" },
         include: {
           product: { include: { category: true } },
-          design: { select: { id: true, name: true, thumbnailUrl: true } },
+          design: { select: { id: true, name: true, thumbnailUrl: true, selection: true } },
         },
       },
     },

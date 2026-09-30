@@ -34,13 +34,12 @@ export function EditorLeftPanel({ isAuthenticated }: { isAuthenticated: boolean 
   const setActivePanel = useEditorStore((s) => s.setActivePanel);
 
   return (
-    <div className="flex h-full border-r bg-surface">
-      {/* Icon rail */}
+    <div className="flex h-full w-full flex-col bg-surface lg:w-auto lg:flex-row lg:border-r">
+      {/* Icon rail — horizontal scroller on phones, vertical on desktop. */}
       <div
         role="tablist"
         aria-label="Editor tools"
-        aria-orientation="vertical"
-        className="flex w-16 shrink-0 flex-col items-center gap-1 border-r bg-paper py-3"
+        className="flex shrink-0 items-center gap-1 overflow-x-auto border-b bg-paper px-2 py-1.5 lg:w-16 lg:flex-col lg:overflow-visible lg:border-b-0 lg:border-r lg:px-0 lg:py-3"
       >
         {TABS.map((tab) => {
           const isActive = activePanel === tab.id;
@@ -52,7 +51,7 @@ export function EditorLeftPanel({ isAuthenticated }: { isAuthenticated: boolean 
               aria-controls={`panel-${tab.id}`}
               onClick={() => setActivePanel(tab.id)}
               className={cn(
-                "flex h-12 w-12 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-md transition-colors",
+                "flex h-11 w-14 shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-md transition-colors lg:h-12 lg:w-12",
                 isActive
                   ? "bg-ember-100 text-ember-700"
                   : "text-ink-soft hover:bg-cream hover:text-ink",
@@ -68,7 +67,7 @@ export function EditorLeftPanel({ isAuthenticated }: { isAuthenticated: boolean 
       {/* Panel body — every panel stays mounted; switching tabs only toggles
           visibility. V1 unmounted the inactive panels, so uploads and search
           state were destroyed on every tab switch (its BUG-E07 class). */}
-      <div className="w-64 shrink-0 overflow-y-auto">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto lg:w-64 lg:flex-none">
         {TABS.map((tab) => (
           <section
             key={tab.id}

@@ -1,9 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" fill="none">
-  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F0FDF4"/><stop offset="1" stop-color="#DCFCE7"/></linearGradient></defs>
-  <rect width="300" height="400" fill="url(#bg)"/>
-  <path d="M110 95 L75 115 L55 165 L88 182 L95 160 L95 320 L205 320 L205 160 L212 182 L245 165 L225 115 L190 95 Q170 112 150 112 Q130 112 110 95 Z" fill="#fff" stroke="#D1D5DB" stroke-width="2.5"/>
-  <path d="M110 95 Q130 112 150 112 Q170 112 190 95" stroke="#D1D5DB" stroke-width="2.5" fill="none"/>
-  <circle cx="150" cy="205" r="38" fill="none" stroke="#16A34A" stroke-width="5"/>
-  <text x="150" y="216" text-anchor="middle" font-family="system-ui" font-size="30" font-weight="800" fill="#16A34A">07</text>
-  <text x="150" y="272" text-anchor="middle" font-family="system-ui" font-size="15" font-weight="800" letter-spacing="2" fill="#166534">CHAMPIONS</text>
+  <rect width="300" height="400" fill="#f3ebdf"/>
+  <circle cx="28" cy="28" r="5" fill="#b94a24"/>
+  <ellipse cx="150" cy="342" rx="92" ry="11" fill="#d2c3ad" opacity="0.5"/>
+  <path d="M108 138 L108 312 L192 312 L192 138 L168 122 L132 122 Z" fill="#fffdf9" stroke="#251c15" stroke-width="2"/>
+  <path d="M108 138 L72 164 L82 188 L108 168" fill="#fffdf9" stroke="#251c15" stroke-width="2"/>
+  <path d="M192 138 L228 164 L218 188 L192 168" fill="#fffdf9" stroke="#251c15" stroke-width="2"/>
+  <path d="M132 122 Q150 144 168 122" stroke="#251c15" stroke-width="2" fill="none"/>
+  <text x="150" y="188" text-anchor="middle" font-family="Georgia, serif" font-size="9" letter-spacing="2" fill="#2a5740">HOME TEAM</text>
+  <text x="150" y="238" text-anchor="middle" font-family="Georgia, serif" font-size="42" font-weight="700" fill="#251c15">23</text>
+  <text x="150" y="268" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#5d5248">est. 2026</text>
 </svg>

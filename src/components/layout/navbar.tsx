@@ -3,6 +3,7 @@ import { ShoppingBag } from "lucide-react";
 import { getCurrentUser } from "@/server/auth/session";
 import { getCartCount } from "@/server/cart";
 import { logout } from "@/server/auth/actions";
+import { BRAND_MARK } from "@/lib/brand";
 import { NavLink } from "@/components/layout/nav-link";
 import { AccountMenu } from "@/components/layout/account-menu";
 import { MobileMenu } from "@/components/layout/mobile-menu";
@@ -11,18 +12,19 @@ export async function Navbar() {
   const [user, cartCount] = await Promise.all([getCurrentUser(), getCartCount()]);
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-paper/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b bg-paper/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex items-center gap-6">
           <Link
             href="/"
             className="flex items-baseline gap-1 font-display text-xl font-semibold tracking-tight text-ink"
           >
-            MyLovelyGift
+            {BRAND_MARK}
             <span aria-hidden className="inline-block h-2 w-2 rounded-full bg-ember-500" />
           </Link>
           <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
             <NavLink href="/products">Shop</NavLink>
+            <NavLink href="/bouquet">Bouquets</NavLink>
             <NavLink href="/templates">Templates</NavLink>
             <NavLink href="/designs">My designs</NavLink>
           </nav>

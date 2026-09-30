@@ -27,6 +27,8 @@ import {
   ARTBOARD_SIZES,
   MUG_3D_PRINT,
   mugBandRadii,
+  previewKind,
+  type PreviewKind,
   type ProductCategory,
 } from "@/lib/geometry";
 
@@ -42,13 +44,15 @@ import {
  * unit test), and the 3D texture assets are compressed WebP.
  */
 
-export type QualityTier = "low" | "high";
+export type QualityTier = "low" | "medium" | "high";
 
 export interface ProductSceneOptions {
   category: ProductCategory;
   tier: QualityTier;
   interactive: boolean;
   autoRotate: boolean;
+  /** Round glass mug: same wrap, no handle mesh. */
+  hideHandle?: boolean;
 }
 
 export interface ProductSceneHandle {
@@ -65,11 +69,12 @@ interface CameraPreset {
   targetY: number;
 }
 
-const CAMERA_PRESETS: Record<ProductCategory, CameraPreset> = {
+const CAMERA_BY_KIND: Record<PreviewKind, CameraPreset> = {
   cup: { alpha: -Math.PI / 2.3, beta: 1.12, radius: 5.6, targetY: 0.95 },
   "t-shirt": { alpha: -Math.PI / 2, beta: 0.52, radius: 6.8, targetY: 0.05 },
   sticker: { alpha: -Math.PI / 2, beta: 0.5, radius: 4.6, targetY: 0.02 },
   badge: { alpha: -Math.PI / 2, beta: 0.55, radius: 4.4, targetY: 0.02 },
+  panel: { alpha: -Math.PI / 2, beta: Math.PI / 2.15, radius: 5.6, targetY: 1.25 },
 };
 
 export function isWebGLAvailable(): boolean {
@@ -122,7 +127,12 @@ function buildHandlePath(steps: number): Vector3[] {
   return path;
 }
 
-function buildMug(scene: Scene, highQuality: boolean, ceramic: PBRMetallicRoughnessMaterial) {
+function buildMug(
+  scene: Scene,
+  highQuality: boolean,
+  ceramic: PBRMetallicRoughnessMaterial,
+  hideHandle = false,
+) {
   const body = MeshBuilder.CreateLathe(
     "mugBody",
     {
@@ -134,20 +144,24 @@ function buildMug(scene: Scene, highQuality: boolean, ceramic: PBRMetallicRoughn
   );
   body.material = ceramic;
 
-  const handle = MeshBuilder.CreateTube(
-    "mugHandle",
-    {
-      path: buildHandlePath(highQuality ? 48 : 24),
-      radius: 0.1,
-      tessellation: highQuality ? 20 : 8,
-      cap: Mesh.CAP_ALL,
-    },
-    scene,
-  );
-  handle.material = ceramic;
-  // Centre the handle in the un-printed gap (opposite the front-facing print)
-  // so the artwork can wrap nearly all the way around without touching it.
-  handle.rotation.y = -Math.PI / 2;
+  const casters: Mesh[] = [body];
+  if (!hideHandle) {
+    const handle = MeshBuilder.CreateTube(
+      "mugHandle",
+      {
+        path: buildHandlePath(highQuality ? 48 : 24),
+        radius: 0.1,
+        tessellation: highQuality ? 20 : 8,
+        cap: Mesh.CAP_ALL,
+      },
+      scene,
+    );
+    handle.material = ceramic;
+    // Centre the handle in the un-printed gap (opposite the front-facing print)
+    // so the artwork can wrap nearly all the way around without touching it.
+    handle.rotation.y = -Math.PI / 2;
+    casters.push(handle);
+  }
 
   const decalMat = new PBRMetallicRoughnessMaterial("decalMat", scene);
   decalMat.baseColor = new Color3(1, 1, 1);
@@ -163,8 +177,8 @@ function buildMug(scene: Scene, highQuality: boolean, ceramic: PBRMetallicRoughn
   // The band radii include a small epsilon so the band clears the body wall's
   // mid-height bulge — without it the body z-fights through the artwork.
   const radii = mugBandRadii();
-  // Wrap the artwork around nearly the full circumference, leaving only a gap
-  // for the handle (which is centred in that gap).
+  // Wrap the artwork around the mug until just before the handle (centred
+  // in the remaining gap). See MUG_3D_PRINT.handleGapDeg.
   //
   // The resulting band aspect ratio (arc length / band height) determines the
   // cup artboard proportions (ARTBOARD_SIZES.cup) so the design maps 1:1 with
@@ -192,12 +206,16 @@ function buildMug(scene: Scene, highQuality: boolean, ceramic: PBRMetallicRoughn
   decal.isVisible = false;
 
   return {
-    casters: [body, handle],
+    casters,
     decal,
     decalMat,
     applyTexture: (tex: Texture) => {
       tex.wrapU = Texture.CLAMP_ADDRESSMODE;
       tex.wrapV = Texture.CLAMP_ADDRESSMODE;
+      // Opaque wrap — PNG edge alpha otherwise bilinear-filters to black and
+      // draws a hairline around the print band.
+      tex.hasAlpha = false;
+      decalMat.transparencyMode = 0;
       // Mirror horizontally so text reads correctly from outside the cylinder.
       tex.uScale = -1;
       tex.uOffset = 1;
@@ -417,27 +435,108 @@ function buildBadge(scene: Scene, highQuality: boolean) {
   };
 }
 
+/* ------------------------------ panel ------------------------------ */
+
+function buildPanel(scene: Scene, category: ProductCategory) {
+  const { width: aw, height: ah } = ARTBOARD_SIZES[category];
+  const aspect = aw / ah;
+  const maxW = 3.1;
+  const maxH = 2.7;
+  let boardW = 2.35 * aspect;
+  let boardH = 2.35;
+  if (boardW > maxW) {
+    boardW = maxW;
+    boardH = boardW / aspect;
+  }
+  if (boardH > maxH) {
+    boardH = maxH;
+    boardW = boardH * aspect;
+  }
+
+  const frameMat = new PBRMetallicRoughnessMaterial("frameMat", scene);
+  frameMat.baseColor = new Color3(0.36, 0.28, 0.22);
+  frameMat.metallic = 0;
+  frameMat.roughness = 0.55;
+
+  const frame = MeshBuilder.CreateBox(
+    "panelFrame",
+    { width: boardW + 0.12, height: boardH + 0.12, depth: 0.08 },
+    scene,
+  );
+  frame.position.y = boardH / 2 + 0.02;
+  frame.material = frameMat;
+
+  const faceMat = new PBRMetallicRoughnessMaterial("faceMat", scene);
+  faceMat.baseColor = new Color3(0.99, 0.98, 0.96);
+  faceMat.metallic = 0;
+  faceMat.roughness = 0.45;
+
+  const face = MeshBuilder.CreateBox(
+    "panelFace",
+    { width: boardW, height: boardH, depth: 0.04 },
+    scene,
+  );
+  face.position.y = frame.position.y;
+  face.position.z = 0.03;
+  face.material = faceMat;
+
+  const decalMat = new PBRMetallicRoughnessMaterial("decalMat", scene);
+  decalMat.baseColor = new Color3(1, 1, 1);
+  decalMat.metallic = 0;
+  decalMat.roughness = 0.4;
+
+  const decal = MeshBuilder.CreatePlane(
+    "panelArt",
+    { width: boardW * 0.94, height: boardH * 0.94 },
+    scene,
+  );
+  decal.position.y = frame.position.y;
+  decal.position.z = 0.055;
+  decal.material = decalMat;
+  decal.isVisible = false;
+
+  return {
+    casters: [frame, face],
+    decal,
+    decalMat,
+    applyTexture: (tex: Texture) => {
+      tex.wrapU = Texture.CLAMP_ADDRESSMODE;
+      tex.wrapV = Texture.CLAMP_ADDRESSMODE;
+      tex.hasAlpha = false;
+      tex.vScale = -1;
+      tex.vOffset = 1;
+    },
+  };
+}
+
 /* ------------------------------ scene ------------------------------ */
 
 export function createProductScene(
   canvas: HTMLCanvasElement,
   options: ProductSceneOptions,
 ): ProductSceneHandle {
-  const { category, tier, interactive, autoRotate } = options;
+  const { category, tier, interactive, autoRotate, hideHandle } = options;
+  const kind = previewKind(category);
   const highQuality = tier === "high";
+  const detailed = tier !== "low";
 
   const engine = new Engine(
     canvas,
-    highQuality,
+    detailed,
     {
       preserveDrawingBuffer: false,
       stencil: false,
-      powerPreference: highQuality ? "high-performance" : "low-power",
+      powerPreference: highQuality ? "high-performance" : "default",
       failIfMajorPerformanceCaveat: false,
     },
     true,
   );
-  engine.setHardwareScalingLevel(highQuality ? 1 : 1.5);
+  // adaptToDeviceRatio already multiplies by devicePixelRatio (often 3 on
+  // phones). Aim for ~2.6 CSS pixels of GPU resolution on medium phones —
+  // sharper than the old 2× "low" pass, short of a full 3× buffer.
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+  const targetRatio = highQuality ? dpr : detailed ? 2.6 : 1.7;
+  engine.setHardwareScalingLevel(Math.max(highQuality ? 1 : detailed ? 1 : 1.2, dpr / targetRatio));
 
   const scene = new Scene(engine);
   // Solid studio backdrop — post-processing pipelines don't preserve canvas alpha.
@@ -454,9 +553,9 @@ export function createProductScene(
   // Image-based lighting for realistic PBR reflections.
   const envTex = CubeTexture.CreateFromPrefilteredData("/3d/studio.env", scene);
   scene.environmentTexture = envTex;
-  scene.environmentIntensity = highQuality ? 0.9 : 0.7;
+  scene.environmentIntensity = highQuality ? 0.9 : detailed ? 0.8 : 0.7;
 
-  const preset = CAMERA_PRESETS[category];
+  const preset = CAMERA_BY_KIND[kind];
   const camera = new ArcRotateCamera(
     "cam",
     preset.alpha,
@@ -507,7 +606,7 @@ export function createProductScene(
 
   const table = MeshBuilder.CreateCylinder(
     "table",
-    { height: 0.14, diameter: 9, tessellation: highQuality ? 80 : 40 },
+    { height: 0.14, diameter: 9, tessellation: detailed ? 64 : 40 },
     scene,
   );
   table.position.y = -0.07;
@@ -516,13 +615,15 @@ export function createProductScene(
 
   // Product model
   const product =
-    category === "cup"
-      ? buildMug(scene, highQuality, ceramic)
-      : category === "t-shirt"
-        ? buildTShirt(scene, highQuality)
-        : category === "sticker"
-          ? buildSticker(scene, highQuality)
-          : buildBadge(scene, highQuality);
+    kind === "cup"
+      ? buildMug(scene, detailed, ceramic, hideHandle)
+      : kind === "t-shirt"
+        ? buildTShirt(scene, detailed)
+        : kind === "sticker"
+          ? buildSticker(scene, detailed)
+          : kind === "badge"
+            ? buildBadge(scene, detailed)
+            : buildPanel(scene, category);
 
   if (highQuality) {
     const shadowGen = new ShadowGenerator(1024, key);
@@ -533,7 +634,7 @@ export function createProductScene(
   } else {
     const fake = MeshBuilder.CreateDisc(
       "fakeShadow",
-      { radius: category === "cup" ? 1.05 : 1.6, tessellation: 24 },
+      { radius: kind === "cup" ? 1.05 : 1.6, tessellation: 24 },
       scene,
     );
     fake.rotation.x = Math.PI / 2;
@@ -553,6 +654,11 @@ export function createProductScene(
     pipeline.bloomThreshold = 0.9;
     pipeline.bloomWeight = 0.1;
     pipeline.bloomScale = 0.5;
+  } else if (detailed) {
+    const pipeline = new DefaultRenderingPipeline("pipeline", true, scene, [camera]);
+    pipeline.fxaaEnabled = true;
+    pipeline.samples = 2;
+    pipeline.bloomEnabled = false;
   }
 
   /* design texture */
@@ -582,6 +688,8 @@ export function createProductScene(
         if (product.decal.name !== "badgeFace") product.decal.isVisible = false;
       },
     );
+    // Default to alpha so stickers/badges can show the product through holes;
+    // mug applyTexture turns this off so the wrap blends into the ceramic.
     tex.hasAlpha = true;
     // Sharpen the artwork when the surface is viewed at an angle (e.g. the
     // curved mug band), which otherwise blurs/pixelates the design.

@@ -8,21 +8,22 @@ import {
 } from "./geometry";
 
 describe("mug 2D-3D contract", () => {
-  // V1's most valuable undocumented invariant: the cup artboard aspect ratio must
-  // equal the 3D mug's printable band aspect (arc length / band height), or artwork
-  // renders visibly stretched. In V1 this lived only in comments across two files.
   it("cup artboard aspect ratio matches the 3D print band", () => {
     const artboard = ARTBOARD_SIZES.cup.width / ARTBOARD_SIZES.cup.height;
     const band = mugBandAspectRatio();
     expect(Math.abs(artboard - band) / band).toBeLessThan(0.005);
+  });
+
+  it("gives the thermal bottle the same wrap as the mug", () => {
+    expect(ARTBOARD_SIZES.bottle).toEqual(ARTBOARD_SIZES.cup);
   });
 });
 
 describe("print size clamping", () => {
   it("clamps to [25%, 100%] of the category maximum", () => {
     const limits = getPrintLimits("cup");
-    expect(limits.minWidth).toBe(Math.round(1115 * 0.25));
-    expect(clampPrintSize("cup", 10_000, 10_000)).toEqual({ width: 1115, height: 380 });
+    expect(limits.minWidth).toBe(Math.round(ARTBOARD_SIZES.cup.width * 0.25));
+    expect(clampPrintSize("cup", 10_000, 10_000)).toEqual(ARTBOARD_SIZES.cup);
     expect(clampPrintSize("cup", 1, 1)).toEqual({
       width: limits.minWidth,
       height: limits.minHeight,

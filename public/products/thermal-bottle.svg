@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" rx="24" fill="#faf6f0"/>
+  <ellipse cx="200" cy="328" rx="46" ry="10" fill="#e7dccb"/>
+  <rect x="168" y="58" width="64" height="28" rx="8" fill="#251c15"/>
+  <rect x="156" y="84" width="88" height="22" rx="6" fill="#5d5248"/>
+  <rect x="148" y="108" width="104" height="200" rx="36" fill="#1f2937" stroke="#251c15" stroke-width="3"/>
+  <rect x="164" y="168" width="72" height="72" rx="8" fill="#faf6f0"/>
+  <text x="200" y="210" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#b94a24">hi</text>
+  <text x="200" y="368" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#251c15">Thermal bottle</text>
+</svg>

@@ -20,7 +20,10 @@ export function SortSelect() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const current = searchParams.get("sort") ?? "featured";
+  const requested = searchParams.get("sort") ?? "featured";
+  const current = OPTIONS.some((option) => option.value === requested)
+    ? requested
+    : "featured";
 
   function onChange(value: string) {
     const params = new URLSearchParams(searchParams);

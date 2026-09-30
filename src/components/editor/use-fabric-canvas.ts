@@ -28,7 +28,7 @@ import { pushHistoryNow, schedulePushHistory } from "@/hooks/use-fabric-mutation
 // the artboard and locked layers stay non-interactive after undo/save/load
 // (V1 defensive item D-1). `shapeName` keeps human-readable layer names for
 // Path-based shapes (Star/Heart/Arrow) across serialisation.
-FabricObject.customProperties = ["id", "selectable", "evented", "shapeName"];
+FabricObject.customProperties = ["id", "selectable", "evented", "shapeName", "photoSlot"];
 
 export interface FabricCanvasConfig {
   category: ProductCategory;
@@ -131,6 +131,7 @@ export function useFabricCanvas(
           await target.loadFromJSON(config.initialPayload.canvas as object);
           // Reattach: the artboard came from the payload, or add a fresh one.
           if (!getArtboard(target)) target.add(createArtboard(100, 100));
+          getArtboard(target)?.set({ stroke: undefined, strokeWidth: 0 });
           ensureArtboardAtBack(target);
           relayoutWithContent(target, config.initialPayload.printSize);
         } catch {
@@ -315,6 +316,37 @@ export function useFabricCanvas(
     container.addEventListener("mouseup", onContainerMouseUp);
     container.addEventListener("mouseleave", onContainerMouseUp);
 
+    let pinchDistance = 0;
+    let pinchZoom = 1;
+    const touchDistance = (touches: TouchList) =>
+      Math.hypot(
+        touches[0].clientX - touches[1].clientX,
+        touches[0].clientY - touches[1].clientY,
+      );
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchDistance = touchDistance(e.touches);
+        pinchZoom = useEditorStore.getState().zoom;
+        endPan();
+      }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && pinchDistance > 0) {
+        e.preventDefault();
+        const scale = touchDistance(e.touches) / pinchDistance;
+        const nextZoom = clampZoom(pinchZoom * scale);
+        useEditorStore.getState().setZoom(nextZoom);
+        applyCanvasZoom(canvas, nextZoom);
+      }
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinchDistance = 0;
+    };
+    container.addEventListener("touchstart", onTouchStart, { passive: true });
+    container.addEventListener("touchmove", onTouchMove, { passive: false });
+    container.addEventListener("touchend", onTouchEnd);
+    container.addEventListener("touchcancel", onTouchEnd);
+
     const resizeObserver = new ResizeObserver(() => {
       const w = container.clientWidth;
       const h = container.clientHeight;
@@ -346,23 +378,26 @@ export function useFabricCanvas(
         return;
       }
 
-      if (e.ctrlKey && e.key.toLowerCase() === "z" && !e.shiftKey) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
         e.preventDefault();
         store.undo();
         return;
       }
-      if (e.ctrlKey && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))
+      ) {
         e.preventDefault();
         store.redo();
         return;
       }
-      if (e.ctrlKey && e.key === "0") {
+      if ((e.ctrlKey || e.metaKey) && e.key === "0") {
         e.preventDefault();
         store.setZoom(1);
         resetCanvasViewport(canvas);
         return;
       }
-      if (e.ctrlKey && e.key.toLowerCase() === "a" && !isTypingTarget(e)) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a" && !isTypingTarget(e)) {
         e.preventDefault();
         const objects = canvas
           .getObjects()
@@ -375,7 +410,7 @@ export function useFabricCanvas(
         }
         return;
       }
-      if (e.ctrlKey && e.key.toLowerCase() === "d") {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
         e.preventDefault();
         const active = canvas.getActiveObject();
         if (active && active.get("id") !== ARTBOARD_ID) {
@@ -457,6 +492,10 @@ export function useFabricCanvas(
       container.removeEventListener("mousemove", onContainerMouseMove);
       container.removeEventListener("mouseup", onContainerMouseUp);
       container.removeEventListener("mouseleave", onContainerMouseUp);
+      container.removeEventListener("touchstart", onTouchStart);
+      container.removeEventListener("touchmove", onTouchMove);
+      container.removeEventListener("touchend", onTouchEnd);
+      container.removeEventListener("touchcancel", onTouchEnd);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };

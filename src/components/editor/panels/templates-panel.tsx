@@ -2,10 +2,10 @@
 
 /* eslint-disable @next/next/no-img-element -- small local SVG thumbnails inside the editor chrome */
 
-import { Plus } from "lucide-react";
+import { Folder, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useEditorStore } from "@/store/editor-store";
-import { templatesForCategory } from "@/lib/template-meta";
+import { templatesGroupedForCategory } from "@/lib/template-meta";
 import { applyTemplate } from "@/lib/editor/template-builders";
 import { ARTBOARD_ID } from "@/lib/editor/artboard";
 import { pushHistoryNow } from "@/hooks/use-fabric-mutation";
@@ -15,7 +15,7 @@ export function TemplatesPanel() {
   const canvas = useEditorStore((s) => s.canvas);
   const category = useEditorStore((s) => s.category);
   const activeTemplate = useEditorStore((s) => s.activeTemplate);
-  const templates = templatesForCategory(category);
+  const groups = templatesGroupedForCategory(category);
 
   const apply = (id: string) => {
     if (!canvas) return;
@@ -23,7 +23,6 @@ export function TemplatesPanel() {
     const hasContent = canvas
       .getObjects()
       .some((obj) => obj.get("id") !== ARTBOARD_ID);
-    // Applying a template replaces the canvas — V1 did this without asking.
     if (hasContent) {
       const proceed = window.confirm(
         "Applying a template replaces what's on the canvas. (Ctrl+Z brings it back.) Continue?",
@@ -43,36 +42,47 @@ export function TemplatesPanel() {
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <h2 className="font-display text-sm font-semibold text-ink">Templates</h2>
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          onClick={() => apply("blank")}
-          className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border-2 border-dashed border-line-strong text-ink-soft transition-colors hover:border-ember-400 hover:text-ember-700"
-        >
-          <Plus aria-hidden className="h-5 w-5" />
-          <span className="text-xs font-semibold">Blank</span>
-        </button>
+      <button
+        onClick={() => apply("blank")}
+        className="flex aspect-[3/2] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-md border-2 border-dashed border-line-strong text-ink-soft transition-colors hover:border-ember-400 hover:text-ember-700"
+      >
+        <Plus aria-hidden className="h-5 w-5" />
+        <span className="text-xs font-semibold">Blank</span>
+      </button>
 
-        {templates.map((template) => (
-          <button
-            key={template.id}
-            onClick={() => apply(template.id)}
-            aria-pressed={activeTemplate === template.id}
-            className={cn(
-              "cursor-pointer overflow-hidden rounded-md border-2 bg-cream/60 transition-all hover:-translate-y-0.5",
-              activeTemplate === template.id
-                ? "border-ember-500"
-                : "border-transparent hover:border-line-strong",
-            )}
+      {groups.map(({ folder, templates }) => (
+        <section key={folder.id} aria-labelledby={`folder-${folder.id}`}>
+          <h3
+            id={`folder-${folder.id}`}
+            className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-ink-soft"
           >
-            <img src={template.thumbnailUrl} alt="" className="h-auto w-full" />
-            <span className="block truncate px-1.5 py-1 text-left text-[11px] font-semibold text-ink">
-              {template.name}
-            </span>
-          </button>
-        ))}
-      </div>
+            <Folder aria-hidden className="h-3.5 w-3.5" />
+            {folder.name}
+          </h3>
+          <div className="grid grid-cols-2 gap-2">
+            {templates.map((template) => (
+              <button
+                key={template.id}
+                onClick={() => apply(template.id)}
+                aria-pressed={activeTemplate === template.id}
+                className={cn(
+                  "cursor-pointer overflow-hidden rounded-md border-2 bg-paper transition-all hover:-translate-y-0.5",
+                  activeTemplate === template.id
+                    ? "border-ember-500"
+                    : "border-transparent hover:border-line-strong",
+                )}
+              >
+                <img src={template.thumbnailUrl} alt="" className="h-auto w-full" />
+                <span className="block truncate px-1.5 py-1 text-left text-[11px] font-semibold text-ink">
+                  {template.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
