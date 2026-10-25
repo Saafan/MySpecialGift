@@ -42,8 +42,8 @@ export interface FlowerType {
 export const SATIN_COLOR_IDS = ["red", "pink", "white", "cyan", "lilac"] as const;
 
 const SATIN: Record<(typeof SATIN_COLOR_IDS)[number], FlowerColor> = {
-  // Shared swatches. Rose and tulip satin both sit on these; a later
-  // flower can still move one if its fabric disagrees.
+  // Shared swatches. Rose, tulip and gerbera satin all sit on these; a
+  // later flower can still move one if its fabric disagrees.
   red: { id: "red", name: "Red", hex: "#c82538" },
   pink: { id: "pink", name: "Pink", hex: "#f68ba4" },
   white: { id: "white", name: "White", hex: "#e3dcd6" },
