@@ -42,11 +42,13 @@ export interface FlowerType {
 export const SATIN_COLOR_IDS = ["red", "pink", "white", "cyan", "lilac"] as const;
 
 const SATIN: Record<(typeof SATIN_COLOR_IDS)[number], FlowerColor> = {
-  red: { id: "red", name: "Red", hex: "#d0344f" },
-  pink: { id: "pink", name: "Pink", hex: "#f08cb4" },
-  white: { id: "white", name: "White", hex: "#f7f3ea" },
-  cyan: { id: "cyan", name: "Cyan", hex: "#35c6d6" },
-  lilac: { id: "lilac", name: "Lilac", hex: "#b79ae0" },
+  // Matched to the rose satin (the first photos in). Other flowers share
+  // these swatches until their own fabric says otherwise.
+  red: { id: "red", name: "Red", hex: "#c82538" },
+  pink: { id: "pink", name: "Pink", hex: "#f68ba4" },
+  white: { id: "white", name: "White", hex: "#e3dcd6" },
+  cyan: { id: "cyan", name: "Cyan", hex: "#36cbeb" },
+  lilac: { id: "lilac", name: "Lilac", hex: "#c8a7ea" },
 };
 
 function satin(...ids: (typeof SATIN_COLOR_IDS)[number][]): FlowerColor[] {
