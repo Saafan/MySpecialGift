@@ -9,7 +9,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { FLOWER_TYPES, type FlowerId } from "./flowers";
+import { FLOWER_TYPES } from "./flowers";
 import { satinKey, type BouquetArt, type SatinAsset } from "./satin";
 
 const FLOWER_IDS = new Set<string>(FLOWER_TYPES.map((flower) => flower.id));
@@ -19,7 +19,7 @@ export function listBouquetArt(dir = path.join(process.cwd(), "public", "bouquet
   try {
     names = fs.readdirSync(dir);
   } catch {
-    return { satin: {}, legacy: {} };
+    return { satin: {} };
   }
   const have = new Set(names);
 
@@ -35,12 +35,6 @@ export function listBouquetArt(dir = path.join(process.cwd(), "public", "bouquet
         satin[satinKey(flower.id, color.id)] = { src: `/bouquet/${png}`, knockout: true };
       }
     }
-  }
-
-  const legacy: BouquetArt["legacy"] = {};
-  for (const flower of FLOWER_TYPES) {
-    const file = flower.image.replace(/^\/bouquet\//, "");
-    if (have.has(file)) legacy[flower.id as FlowerId] = flower.image;
   }
 
   // A loose scan as well, so a correctly named file is picked up even if a
@@ -61,5 +55,5 @@ export function listBouquetArt(dir = path.join(process.cwd(), "public", "bouquet
     }
   }
 
-  return { satin, legacy };
+  return { satin };
 }

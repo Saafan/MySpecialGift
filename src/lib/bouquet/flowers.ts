@@ -12,8 +12,7 @@
  *
  * A satin photo is `public/bouquet/<flower>-<color>.webp` (or `.png` on a
  * white background, which the page cuts out). Dropping the file is enough —
- * nothing in this catalogue has to be edited. `image` is the older natural
- * portrait, used only while that flower's satin photo is still missing.
+ * nothing in this catalogue has to be edited.
  */
 
 export type FlowerId = "rose" | "tulip" | "gerbera" | "chrysanthemum" | "sunflower";
@@ -33,8 +32,6 @@ export interface FlowerType {
   /** Price of one stem, in piastres. */
   priceCents: number;
   code: string;
-  /** Natural-flower portrait. Fallback for the palette until a satin photo exists. */
-  image: string;
   colors: FlowerColor[];
 }
 
@@ -42,8 +39,7 @@ export interface FlowerType {
 export const SATIN_COLOR_IDS = ["red", "pink", "white", "cyan", "lilac"] as const;
 
 const SATIN: Record<(typeof SATIN_COLOR_IDS)[number], FlowerColor> = {
-  // Shared swatches. Rose, tulip, gerbera and chrysanthemum satin all sit
-  // on these; a later flower can still move one if its fabric disagrees.
+  // Shared swatches, matched to the satin fabric on all five flowers.
   red: { id: "red", name: "Red", hex: "#c82538" },
   pink: { id: "pink", name: "Pink", hex: "#f68ba4" },
   white: { id: "white", name: "White", hex: "#e3dcd6" },
@@ -62,7 +58,6 @@ export const FLOWER_TYPES: FlowerType[] = [
     tagline: "Rolled crepe petals, tight spiral centre",
     priceCents: 9500,
     code: "r",
-    image: "/bouquet/rose.png",
     // Index 0 red and 1 pink match links shared before the satin palette.
     colors: satin("red", "pink", "white", "cyan", "lilac"),
   },
@@ -72,7 +67,6 @@ export const FLOWER_TYPES: FlowerType[] = [
     tagline: "Clean cupped petals, quietly cheerful",
     priceCents: 8500,
     code: "t",
-    image: "/bouquet/tulip.png",
     colors: satin("white", "red", "pink", "cyan", "lilac"),
   },
   {
@@ -81,7 +75,6 @@ export const FLOWER_TYPES: FlowerType[] = [
     tagline: "Wide open petals around a dark eye",
     priceCents: 6500,
     code: "d",
-    image: "/bouquet/gerbera.png",
     colors: satin("pink", "red", "white", "cyan", "lilac"),
   },
   {
@@ -90,7 +83,6 @@ export const FLOWER_TYPES: FlowerType[] = [
     tagline: "A dense ball of ruffled petals",
     priceCents: 11000,
     code: "p",
-    image: "/bouquet/chrysanthemum.png",
     colors: satin("white", "red", "pink", "cyan", "lilac"),
   },
   {
@@ -99,7 +91,6 @@ export const FLOWER_TYPES: FlowerType[] = [
     tagline: "Big, bright and slightly unserious",
     priceCents: 9000,
     code: "s",
-    image: "/bouquet/sunflower.png",
     colors: [
       // Index 0 stays marigold so an old sunflower link still opens.
       { id: "marigold", name: "Marigold", hex: "#eab838", legacy: true },

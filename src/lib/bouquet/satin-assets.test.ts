@@ -17,7 +17,7 @@ function tempBouquet(): string {
 }
 
 describe("satin photo discovery", () => {
-  it("uses a dropped webp before a png, and keeps legacy portraits separate", () => {
+  it("uses a dropped webp before a png, and ignores a natural portrait", () => {
     const dir = tempBouquet();
     writeFileSync(path.join(dir, "rose-red.webp"), "");
     writeFileSync(path.join(dir, "rose-red.png"), "");
@@ -30,8 +30,7 @@ describe("satin photo discovery", () => {
     expect(art.satin["rose:red"]).toEqual({ src: "/bouquet/rose-red.webp", knockout: false });
     expect(art.satin["tulip:cyan"]).toEqual({ src: "/bouquet/tulip-cyan.png", knockout: true });
     expect(art.satin["rose:pink"]).toBeUndefined();
-    expect(art.legacy.rose).toBe("/bouquet/rose.png");
-    expect(art.legacy.tulip).toBeUndefined();
+    expect(Object.values(art.satin).some((asset) => asset.src.endsWith("/rose.png"))).toBe(false);
   });
 
   it("does not treat the natural gerbera portrait as a satin colour", () => {
@@ -39,6 +38,6 @@ describe("satin photo discovery", () => {
     writeFileSync(path.join(dir, "gerbera.png"), "");
     const art = listBouquetArt(dir);
     expect(art.satin["gerbera:pink"]).toBeUndefined();
-    expect(art.legacy.gerbera).toBe("/bouquet/gerbera.png");
+    expect(Object.values(art.satin)).toEqual([]);
   });
 });

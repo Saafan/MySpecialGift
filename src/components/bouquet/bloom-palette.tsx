@@ -32,7 +32,7 @@ function FlowerPortrait({
 }) {
   const asset = art.satin[satinKey(flower.id, colorId)];
   const cut = useCutout(asset?.knockout ? asset.src : undefined, Boolean(asset?.knockout));
-  const src = (asset ? (asset.knockout ? cut : asset.src) : undefined) ?? art.legacy[flower.id];
+  const src = asset ? (asset.knockout ? cut : asset.src) : undefined;
 
   if (!src) {
     return (
