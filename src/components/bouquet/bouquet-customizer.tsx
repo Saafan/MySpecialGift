@@ -17,6 +17,7 @@ import {
   type BouquetConfig,
 } from "@/lib/bouquet/config";
 import { findFlower, findFlowerColor } from "@/lib/bouquet/flowers";
+import { EMPTY_BOUQUET_ART, type BouquetArt } from "@/lib/bouquet/satin";
 import { shapeForSize } from "@/lib/bouquet/layout";
 import { findPaper } from "@/lib/bouquet/papers";
 import { quoteBouquet } from "@/lib/bouquet/pricing";
@@ -29,7 +30,13 @@ import { ShapePicker } from "./shape-picker";
 import { SizePicker } from "./size-picker";
 import { useBouquet } from "./use-bouquet";
 
-export function BouquetCustomizer({ initialConfig }: { initialConfig?: BouquetConfig | null }) {
+export function BouquetCustomizer({
+  initialConfig,
+  art = EMPTY_BOUQUET_ART,
+}: {
+  initialConfig?: BouquetConfig | null;
+  art?: BouquetArt;
+}) {
   const bouquet = useBouquet(initialConfig);
   const { config, brush } = bouquet;
 
@@ -85,6 +92,7 @@ export function BouquetCustomizer({ initialConfig }: { initialConfig?: BouquetCo
           <div className="relative h-[36vh] min-h-[230px] overflow-hidden rounded-lg border bg-gradient-to-b from-surface to-cream/60 shadow-lift lg:h-[calc(100dvh-9rem)]">
             <BouquetPreview
               config={config}
+              art={art}
               onPaintStem={bouquet.paintStem}
               brushLabel={brushLabel}
             />
@@ -123,6 +131,7 @@ export function BouquetCustomizer({ initialConfig }: { initialConfig?: BouquetCo
             <BloomPalette
               brush={brush}
               counts={counts}
+              art={art}
               onSelectFlower={bouquet.setBrushFlower}
               onSelectColor={bouquet.setBrushColor}
               onFillAll={bouquet.fillAll}

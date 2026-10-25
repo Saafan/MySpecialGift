@@ -2,8 +2,8 @@
  * Bouquet arrangement geometry — where every bloom sits, seen from above.
  *
  * Two shapes are offered. Blooms are packed so they fill the circle or the
- * heart, with an even gap and no overlaps. The preview and the size diagrams
- * both read from here.
+ * heart, with a small even gap and no overlaps. The preview and the size
+ * diagrams both read from here.
  */
 
 export const ROUND_SIZES = [10, 15, 20] as const;
@@ -34,9 +34,15 @@ export function sizeForShape(shape: BouquetShape, from: BouquetSize): BouquetSiz
 /** Drawing surface every coordinate below is expressed in. Square, because the view is from above. */
 export const CANVAS = { width: 640, height: 640 } as const;
 
-const CENTER = { x: 320, y: 318 } as const;
-/** Outermost bloom centre, before the paper collar. */
-const CLUSTER = 176;
+const CENTER = { x: 320, y: 320 } as const;
+/**
+ * Outermost bloom centre, before the paper collar. The blooms themselves are
+ * sized in `bloomRadius`; this only keeps the collar inside the canvas once
+ * those blooms have grown to fill the shape.
+ */
+const CLUSTER = 166;
+/** Centres pack inside this fraction of the shape, then scale out to `CLUSTER`. */
+const SHAPE_LIMIT = 0.98;
 
 export interface BloomPlacement {
   /** Index into `BouquetConfig.stems`, top to bottom then left to right. */
@@ -129,16 +135,20 @@ function circlePoints(samples: number): LocalPoint[] {
   });
 }
 
-/** Even packing inside the shape: a spiral start, then each bloom settles into the middle of its share of the area. */
+/**
+ * Even packing inside the shape. Lloyd spreads blooms across the area; a
+ * short maximin pass then nudges the closest pairs apart so one tight spot
+ * cannot keep every flower small.
+ */
 function pack(count: number, shape: BouquetShape): LocalPoint[] {
-  const inside =
-    shape === "heart"
-      ? (point: LocalPoint) => pointInPolygon(point.x / 0.9, point.y / 0.9, HEART_NORMAL)
-      : (point: LocalPoint) => point.x * point.x + point.y * point.y <= 0.9 * 0.9;
+  const inside = (point: LocalPoint) => contains(shape, point);
   const samples = shape === "heart" ? HEART_SAMPLES : CIRCLE_SAMPLES;
-  const area = samples.length * 0.05 * 0.05;
-  const minDist = Math.sqrt(area / count) * 0.82;
-  return separate(relax(seed(count, inside), samples, inside), minDist, inside);
+  return grow(relax(seed(count, inside), samples, inside, 32), inside);
+}
+
+function contains(shape: BouquetShape, point: LocalPoint): boolean {
+  if (shape === "heart") return pointInPolygon(point.x / SHAPE_LIMIT, point.y / SHAPE_LIMIT, HEART_NORMAL);
+  return point.x * point.x + point.y * point.y <= SHAPE_LIMIT * SHAPE_LIMIT;
 }
 
 function seed(count: number, inside: (point: LocalPoint) => boolean): LocalPoint[] {
@@ -154,9 +164,10 @@ function relax(
   points: LocalPoint[],
   samples: LocalPoint[],
   inside: (point: LocalPoint) => boolean,
+  iterations: number,
 ): LocalPoint[] {
   let current = points.map((point) => ({ ...point }));
-  for (let iteration = 0; iteration < 22; iteration += 1) {
+  for (let iteration = 0; iteration < iterations; iteration += 1) {
     const sum = current.map(() => ({ x: 0, y: 0, n: 0 }));
     for (const sample of samples) {
       let best = 0;
@@ -182,28 +193,53 @@ function relax(
   return current;
 }
 
-function separate(
-  points: LocalPoint[],
-  minDist: number,
-  inside: (point: LocalPoint) => boolean,
-): LocalPoint[] {
-  const next = points.map((point) => ({ ...point }));
-  for (let pass = 0; pass < 10; pass += 1) {
-    for (let i = 0; i < next.length; i += 1) {
-      for (let j = i + 1; j < next.length; j += 1) {
-        const dx = next[j].x - next[i].x;
-        const dy = next[j].y - next[i].y;
-        const distance = Math.hypot(dx, dy) || 0.0001;
-        if (distance >= minDist) continue;
-        const push = (minDist - distance) / 2;
-        const ux = dx / distance;
-        const uy = dy / distance;
-        next[i] = project({ x: next[i].x - ux * push, y: next[i].y - uy * push }, inside);
-        next[j] = project({ x: next[j].x + ux * push, y: next[j].y + uy * push }, inside);
-      }
+function pairDistance(points: LocalPoint[]): number {
+  let nearest = Infinity;
+  for (let i = 0; i < points.length; i += 1) {
+    for (let j = i + 1; j < points.length; j += 1) {
+      nearest = Math.min(nearest, Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y));
     }
   }
-  return next;
+  return nearest;
+}
+
+/**
+ * Raise the minimum spacing a little at a time. If a step piles blooms on the
+ * outline and the gap shrinks, that step is dropped and the previous spread
+ * is kept.
+ */
+function grow(points: LocalPoint[], inside: (point: LocalPoint) => boolean): LocalPoint[] {
+  let current = points.map((point) => ({ ...point }));
+  let best = current.map((point) => ({ ...point }));
+  let bestDist = pairDistance(best);
+  let target = bestDist;
+
+  for (let pass = 0; pass < 10; pass += 1) {
+    target *= 1.035;
+    const trial = current.map((point) => ({ ...point }));
+    for (let sub = 0; sub < 6; sub += 1) {
+      for (let i = 0; i < trial.length; i += 1) {
+        for (let j = i + 1; j < trial.length; j += 1) {
+          const dx = trial[j].x - trial[i].x;
+          const dy = trial[j].y - trial[i].y;
+          const distance = Math.hypot(dx, dy) || 0.0001;
+          if (distance >= target) continue;
+          const push = (target - distance) / 2;
+          const ux = dx / distance;
+          const uy = dy / distance;
+          trial[i] = { x: trial[i].x - ux * push, y: trial[i].y - uy * push };
+          trial[j] = { x: trial[j].x + ux * push, y: trial[j].y + uy * push };
+        }
+      }
+      for (let i = 0; i < trial.length; i += 1) trial[i] = project(trial[i], inside);
+    }
+    const achieved = pairDistance(trial);
+    if (achieved <= bestDist + 1e-4) break;
+    bestDist = achieved;
+    best = trial.map((point) => ({ ...point }));
+    current = trial;
+  }
+  return best;
 }
 
 function project(point: LocalPoint, inside: (point: LocalPoint) => boolean): LocalPoint {
@@ -248,8 +284,8 @@ function heartOutlineRaw(samples: number): LocalPoint[] {
 }
 
 const HEART_NORMAL = heartOutlineRaw(140);
-const CIRCLE_SAMPLES = samplesWhere((x, y) => x * x + y * y <= 0.9 * 0.9);
-const HEART_SAMPLES = samplesWhere((x, y) => pointInPolygon(x / 0.9, y / 0.9, HEART_NORMAL));
+const CIRCLE_SAMPLES = samplesWhere((x, y) => x * x + y * y <= SHAPE_LIMIT * SHAPE_LIMIT);
+const HEART_SAMPLES = samplesWhere((x, y) => pointInPolygon(x / SHAPE_LIMIT, y / SHAPE_LIMIT, HEART_NORMAL));
 
 function pointInPolygon(x: number, y: number, polygon: LocalPoint[]): boolean {
   let inside = false;
@@ -271,8 +307,9 @@ function bloomRadius(points: LocalPoint[]): number {
       nearest = Math.min(nearest, Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y));
     }
   }
-  // Petals stay just apart: a little over half the centre-to-centre distance is flower.
-  return Math.min(52, nearest * 0.47);
+  // Just under half the closest pair. Petals almost meet, with a slim gap so
+  // neighbouring blooms stay readable instead of stacking into one mass.
+  return nearest * 0.49;
 }
 
 function wobbleAt(index: number, channel: number): number {

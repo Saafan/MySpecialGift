@@ -4,13 +4,61 @@ import Image from "next/image";
 import { MousePointerClick, Shuffle, Sparkles, Undo2 } from "lucide-react";
 import { formatCents } from "@/lib/money";
 import type { Stem } from "@/lib/bouquet/config";
-import { FLOWER_TYPES, findFlower, findFlowerColor, type FlowerId } from "@/lib/bouquet/flowers";
+import {
+  FLOWER_TYPES,
+  findFlower,
+  findFlowerColor,
+  selectableColors,
+  type FlowerId,
+  type FlowerType,
+} from "@/lib/bouquet/flowers";
+import { satinKey, type BouquetArt } from "@/lib/bouquet/satin";
 import { Button } from "@/components/ui/button";
+import { FlowerSwatch } from "./flower-art";
 import { optionCardClass } from "./panel";
+import { useCutout } from "./use-cutout";
+
+const portraitClass =
+  "h-16 w-16 rounded-full object-cover shadow-sm ring-1 ring-ink/10 transition-transform duration-200 group-hover:scale-105";
+
+function FlowerPortrait({
+  flower,
+  colorId,
+  art,
+}: {
+  flower: FlowerType;
+  colorId: string;
+  art: BouquetArt;
+}) {
+  const asset = art.satin[satinKey(flower.id, colorId)];
+  const cut = useCutout(asset?.knockout ? asset.src : undefined, Boolean(asset?.knockout));
+  const src = (asset ? (asset.knockout ? cut : asset.src) : undefined) ?? art.legacy[flower.id];
+
+  if (!src) {
+    return (
+      <FlowerSwatch
+        flowerId={flower.id}
+        hex={findFlowerColor(flower, colorId).hex}
+        className="h-16 w-16"
+      />
+    );
+  }
+
+  if (src.startsWith("blob:")) {
+    return (
+      // Cut-out photos are blob URLs, which next/image does not load.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={src} alt="" className={portraitClass} />
+    );
+  }
+
+  return <Image src={src} alt="" width={128} height={128} className={portraitClass} />;
+}
 
 export function BloomPalette({
   brush,
   counts,
+  art,
   onSelectFlower,
   onSelectColor,
   onFillAll,
@@ -20,6 +68,7 @@ export function BloomPalette({
   brush: Stem;
   /** How many stems of each flower are currently in the bouquet. */
   counts: Record<string, number>;
+  art: BouquetArt;
   onSelectFlower: (flowerId: FlowerId) => void;
   onSelectColor: (colorId: string) => void;
   onFillAll: () => void;
@@ -28,12 +77,20 @@ export function BloomPalette({
 }) {
   const activeFlower = findFlower(brush.flowerId);
   const activeColor = findFlowerColor(activeFlower, brush.colorId);
+  const offered = selectableColors(activeFlower);
+  // An old link can still be a retired colour (sunflower marigold). Keep that
+  // swatch visible so the brush matches the bouquet, after the five satin ones.
+  const shownColors = offered.some((color) => color.id === activeColor.id)
+    ? offered
+    : [...offered, activeColor];
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
         {FLOWER_TYPES.map((flower) => {
           const count = counts[flower.id] ?? 0;
+          const shownColorId =
+            brush.flowerId === flower.id ? activeColor.id : selectableColors(flower)[0].id;
           return (
             <label key={flower.id} className={`${optionCardClass} gap-1 px-1 py-2.5`}>
               <input
@@ -43,13 +100,7 @@ export function BloomPalette({
                 checked={brush.flowerId === flower.id}
                 onChange={() => onSelectFlower(flower.id)}
               />
-              <Image
-                src={flower.image}
-                alt=""
-                width={128}
-                height={128}
-                className="h-16 w-16 rounded-full object-cover shadow-sm ring-1 ring-ink/10 transition-transform duration-200 group-hover:scale-105"
-              />
+              <FlowerPortrait flower={flower} colorId={shownColorId} art={art} />
               <span className="max-w-full text-center text-[11px] font-semibold leading-tight tracking-tight text-ink group-has-[:checked]:text-ember-700">
                 {flower.id === "chrysanthemum" ? (
                   <>
@@ -77,13 +128,13 @@ export function BloomPalette({
         })}
       </div>
 
-      {activeFlower.colors.length > 1 && (
+      {shownColors.length > 0 && (
         <fieldset>
           <legend className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-faint">
             {activeFlower.name} colour · {activeColor.name}
           </legend>
           <div className="flex flex-wrap gap-2">
-            {activeFlower.colors.map((color) => (
+            {shownColors.map((color) => (
               <label
                 key={color.id}
                 title={color.name}

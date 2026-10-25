@@ -11,11 +11,13 @@
 import { useId } from "react";
 import { shade } from "@/lib/bouquet/color";
 import type { BouquetConfig } from "@/lib/bouquet/config";
-import { findFlower, findFlowerColor } from "@/lib/bouquet/flowers";
+import { findFlower, findFlowerColor, type FlowerId } from "@/lib/bouquet/flowers";
 import { bouquetGeometry, CANVAS, outlinePoints, type BouquetShape } from "@/lib/bouquet/layout";
 import { findPaper } from "@/lib/bouquet/papers";
+import { satinKey, type BouquetArt, type SatinAsset } from "@/lib/bouquet/satin";
 import { cn } from "@/lib/utils";
 import { FlowerArt } from "./flower-art";
+import { useCutout } from "./use-cutout";
 
 const PANELS = 14;
 
@@ -30,17 +32,42 @@ function n(value: number): string {
 
 export interface BouquetPreviewProps {
   config: BouquetConfig;
+  art: BouquetArt;
   onPaintStem?: (index: number) => void;
   brushLabel?: string;
   className?: string;
 }
 
-export function BouquetPreview({ config, onPaintStem, brushLabel, className }: BouquetPreviewProps) {
+function BloomFace({
+  flowerId,
+  hex,
+  asset,
+}: {
+  flowerId: FlowerId;
+  hex: string;
+  asset?: SatinAsset;
+}) {
+  const cut = useCutout(asset?.knockout ? asset.src : undefined, Boolean(asset?.knockout));
+  const src = asset ? (asset.knockout ? cut : asset.src) : undefined;
+  if (!src) return <FlowerArt flowerId={flowerId} hex={hex} />;
+  return (
+    <image
+      href={src}
+      x={-55}
+      y={-55}
+      width={110}
+      height={110}
+      preserveAspectRatio="xMidYMid meet"
+    />
+  );
+}
+
+export function BouquetPreview({ config, art, onPaintStem, brushLabel, className }: BouquetPreviewProps) {
   const uid = useId();
   const geometry = bouquetGeometry(config.size);
   const paper = findPaper(config.paperId);
   const { center, clusterHalfWidth, radius, shape } = geometry;
-  const innerReach = clusterHalfWidth + radius + 8;
+  const innerReach = clusterHalfWidth + radius + 3;
   const outerReach = innerReach + 72;
   const interactive = typeof onPaintStem === "function";
 
@@ -77,13 +104,17 @@ export function BouquetPreview({ config, onPaintStem, brushLabel, className }: B
           const color = findFlowerColor(flower, stem?.colorId);
           const scale = (bloom.radius / 55) * bloom.scale;
           const name = `${color.name.toLowerCase()} ${flower.name.toLowerCase()}`;
-          const art = (
+          const bloomArt = (
             <g transform={`translate(${bloom.x} ${bloom.y}) rotate(${bloom.rotation}) scale(${scale})`}>
-              <FlowerArt flowerId={flower.id} hex={color.hex} />
+              <BloomFace
+                flowerId={flower.id}
+                hex={color.hex}
+                asset={art.satin[satinKey(flower.id, color.id)]}
+              />
             </g>
           );
 
-          if (!interactive) return <g key={bloom.index}>{art}</g>;
+          if (!interactive) return <g key={bloom.index}>{bloomArt}</g>;
 
           return (
             <g
@@ -113,7 +144,7 @@ export function BouquetPreview({ config, onPaintStem, brushLabel, className }: B
                 strokeWidth={3}
                 className="stroke-ember-500 opacity-0 transition-opacity duration-200 group-hover:opacity-70 group-focus-visible:opacity-100"
               />
-              {art}
+              {bloomArt}
             </g>
           );
         })}

@@ -40,9 +40,23 @@ describe("bouquet geometry", () => {
           nearest = Math.min(nearest, Math.hypot(dx, dy));
         }
       }
-      // Petals stay apart, and the gap is not so wide that the bouquet looks empty.
+      // Petals stay apart, and a typical neighbour sits close — the arrangement
+      // should read as full rather than as flowers floating in the shape.
       expect(nearest).toBeGreaterThan(geometry.radius * 2);
-      expect(nearest).toBeLessThan(geometry.radius * 2 * 2.4);
+      expect(nearest).toBeLessThan(geometry.radius * 2 * 1.2);
+      const gaps = geometry.blooms
+        .map((bloom) => {
+          let distance = Infinity;
+          for (const other of geometry.blooms) {
+            if (other === bloom) continue;
+            distance = Math.min(distance, Math.hypot(bloom.x - other.x, bloom.y - other.y));
+          }
+          return distance;
+        })
+        .sort((a, b) => a - b);
+      const median = gaps[Math.floor(gaps.length / 2)];
+      expect(median).toBeGreaterThan(geometry.radius * 2);
+      expect(median).toBeLessThan(geometry.radius * 2 * 1.15);
       for (const bloom of geometry.blooms) {
         expect(bloom.x - bloom.radius).toBeGreaterThan(8);
         expect(bloom.x + bloom.radius).toBeLessThan(CANVAS.width - 8);

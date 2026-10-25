@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SHARE_PARAM, decodeBouquet } from "@/lib/bouquet/config";
+import { listBouquetArt } from "@/lib/bouquet/satin-assets";
 import { BouquetCustomizer } from "@/components/bouquet/bouquet-customizer";
 
 export const metadata: Metadata = {
@@ -20,5 +21,5 @@ export default async function BouquetPage({
   // right bouquet; anything malformed quietly falls back to the house mix.
   const initialConfig = decodeBouquet(typeof shared === "string" ? shared : null);
 
-  return <BouquetCustomizer initialConfig={initialConfig} />;
+  return <BouquetCustomizer initialConfig={initialConfig} art={listBouquetArt()} />;
 }

@@ -13,7 +13,7 @@ import {
   type BouquetConfig,
   type Stem,
 } from "@/lib/bouquet/config";
-import { FLOWER_TYPES, findFlower, type FlowerId } from "@/lib/bouquet/flowers";
+import { FLOWER_TYPES, findFlower, selectableColors, type FlowerId } from "@/lib/bouquet/flowers";
 import { PAPER_STOCKS } from "@/lib/bouquet/papers";
 import { sizeForShape, type BouquetShape, type BouquetSize } from "@/lib/bouquet/layout";
 
@@ -40,7 +40,7 @@ function initialState(config: BouquetConfig): State {
     config: normalised,
     brush: { ...normalised.stems[0] },
     recentColors: Object.fromEntries(
-      FLOWER_TYPES.map((flower) => [flower.id, flower.colors[0].id]),
+      FLOWER_TYPES.map((flower) => [flower.id, selectableColors(flower)[0].id]),
     ),
   };
 }
@@ -55,10 +55,11 @@ function reducer(state: State, action: Action): State {
 
     case "brushFlower": {
       const flower = findFlower(action.flowerId);
+      const offered = selectableColors(flower);
       const remembered = state.recentColors[flower.id];
-      const colorId = flower.colors.some((color) => color.id === remembered)
+      const colorId = offered.some((color) => color.id === remembered)
         ? remembered
-        : flower.colors[0].id;
+        : offered[0].id;
       return { ...state, brush: { flowerId: flower.id, colorId } };
     }
 
@@ -122,7 +123,7 @@ function surpriseConfig(size: BouquetSize): BouquetConfig {
 
   const stems: Stem[] = [];
   for (const [flower, upTo] of shares) {
-    const colors = shuffle(flower.colors).slice(0, 2);
+    const colors = shuffle(selectableColors(flower)).slice(0, 2);
     while (stems.length < Math.min(upTo, size)) {
       stems.push({ flowerId: flower.id, colorId: pick(colors).id });
     }
