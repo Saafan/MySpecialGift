@@ -17,10 +17,10 @@ import sharp from "sharp";
 import { knockOutWhite, opaqueBounds } from "../src/lib/bouquet/cutout";
 
 const DIR = path.join(process.cwd(), "public", "bouquet");
-const FLOWERS = ["rose", "tulip", "gerbera", "chrysanthemum", "sunflower"] as const;
+const FLOWERS = ["rose", "tulip", "gerbera", "chrysanthemum"] as const;
 const COLORS = ["red", "pink", "white", "cyan", "lilac"] as const;
 const LEGACY = ["rose.png", "tulip.png", "gerbera.png", "gerbera-pink.png", "chrysanthemum.png", "sunflower.png"];
-const SOURCE = /^(rose|tulip|gerbera|chrysanthemum|sunflower)-(red|pink|white|cyan|lilac)\.png$/i;
+const SOURCE = /^(rose|tulip|gerbera|chrysanthemum)-(red|pink|white|cyan|lilac)\.png$/i;
 
 const MAX_EDGE = 800;
 const PAD = 0.04;

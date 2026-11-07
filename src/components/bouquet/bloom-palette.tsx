@@ -78,7 +78,7 @@ export function BloomPalette({
   const activeFlower = findFlower(brush.flowerId);
   const activeColor = findFlowerColor(activeFlower, brush.colorId);
   const offered = selectableColors(activeFlower);
-  // An old link can still be a retired colour (sunflower marigold). Keep that
+  // An old link can still be a retired colour (an old shared colour). Keep that
   // swatch visible so the brush matches the bouquet, after the five satin ones.
   const shownColors = offered.some((color) => color.id === activeColor.id)
     ? offered

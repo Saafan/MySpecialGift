@@ -50,14 +50,13 @@ describe("share links", () => {
   });
 
   it("still opens colour indexes from links shared before the satin palette", () => {
-    const decoded = decodeBouquet("10-kraft-r0r1t0d0p0s0r0r0r0r0");
-    expect(decoded?.stems.slice(0, 6)).toEqual([
+    const decoded = decodeBouquet("10-kraft-r0r1t0d0p0r0r0r0r0r0");
+    expect(decoded?.stems.slice(0, 5)).toEqual([
       { flowerId: "rose", colorId: "red" },
       { flowerId: "rose", colorId: "pink" },
       { flowerId: "tulip", colorId: "white" },
       { flowerId: "gerbera", colorId: "pink" },
       { flowerId: "chrysanthemum", colorId: "white" },
-      { flowerId: "sunflower", colorId: "marigold" },
     ]);
   });
 

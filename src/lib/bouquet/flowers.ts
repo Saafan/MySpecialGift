@@ -1,5 +1,5 @@
 /**
- * The five satin blooms a bouquet can be built from.
+ * The four satin blooms a bouquet can be built from.
  *
  * `code` is the single character the share-link codec writes per stem, so it
  * must stay unique and must never change once a link has been sent to someone
@@ -15,7 +15,7 @@
  * nothing in this catalogue has to be edited.
  */
 
-export type FlowerId = "rose" | "tulip" | "gerbera" | "chrysanthemum" | "sunflower";
+export type FlowerId = "rose" | "tulip" | "gerbera" | "chrysanthemum";
 
 export interface FlowerColor {
   id: string;
@@ -39,7 +39,7 @@ export interface FlowerType {
 export const SATIN_COLOR_IDS = ["red", "pink", "white", "cyan", "lilac"] as const;
 
 const SATIN: Record<(typeof SATIN_COLOR_IDS)[number], FlowerColor> = {
-  // Shared swatches, matched to the satin fabric on all five flowers.
+  // Shared swatches, matched to the satin fabric on all four flowers.
   red: { id: "red", name: "Red", hex: "#c82538" },
   pink: { id: "pink", name: "Pink", hex: "#f68ba4" },
   white: { id: "white", name: "White", hex: "#e3dcd6" },
@@ -56,7 +56,7 @@ export const FLOWER_TYPES: FlowerType[] = [
     id: "rose",
     name: "Rose",
     tagline: "Rolled crepe petals, tight spiral centre",
-    priceCents: 9500,
+    priceCents: 4900,
     code: "r",
     // Index 0 red and 1 pink match links shared before the satin palette.
     colors: satin("red", "pink", "white", "cyan", "lilac"),
@@ -65,7 +65,7 @@ export const FLOWER_TYPES: FlowerType[] = [
     id: "tulip",
     name: "Tulip",
     tagline: "Clean cupped petals, quietly cheerful",
-    priceCents: 8500,
+    priceCents: 5900,
     code: "t",
     colors: satin("white", "red", "pink", "cyan", "lilac"),
   },
@@ -73,7 +73,7 @@ export const FLOWER_TYPES: FlowerType[] = [
     id: "gerbera",
     name: "Gerbera",
     tagline: "Wide open petals around a dark eye",
-    priceCents: 6500,
+    priceCents: 6900,
     code: "d",
     colors: satin("pink", "red", "white", "cyan", "lilac"),
   },
@@ -81,21 +81,9 @@ export const FLOWER_TYPES: FlowerType[] = [
     id: "chrysanthemum",
     name: "Chrysanthemum",
     tagline: "A dense ball of ruffled petals",
-    priceCents: 11000,
+    priceCents: 6900,
     code: "p",
     colors: satin("white", "red", "pink", "cyan", "lilac"),
-  },
-  {
-    id: "sunflower",
-    name: "Sunflower",
-    tagline: "Big, bright and slightly unserious",
-    priceCents: 9000,
-    code: "s",
-    colors: [
-      // Index 0 stays marigold so an old sunflower link still opens.
-      { id: "marigold", name: "Marigold", hex: "#eab838", legacy: true },
-      ...satin("red", "pink", "white", "cyan", "lilac"),
-    ],
   },
 ];
 

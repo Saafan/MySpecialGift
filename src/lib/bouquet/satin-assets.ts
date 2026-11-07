@@ -40,7 +40,7 @@ export function listBouquetArt(dir = path.join(process.cwd(), "public", "bouquet
   // A loose scan as well, so a correctly named file is picked up even if a
   // colour id is only present on disk. Unknown flowers are ignored.
   for (const name of names) {
-    const match = /^(rose|tulip|gerbera|chrysanthemum|sunflower)-(red|pink|white|cyan|lilac)\.(webp|png)$/i.exec(
+    const match = /^(rose|tulip|gerbera|chrysanthemum)-(red|pink|white|cyan|lilac)\.(webp|png)$/i.exec(
       name,
     );
     if (!match) continue;

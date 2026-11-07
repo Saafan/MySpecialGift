@@ -11,13 +11,12 @@
 import { useId } from "react";
 import { shade } from "@/lib/bouquet/color";
 import type { BouquetConfig } from "@/lib/bouquet/config";
-import { findFlower, findFlowerColor, type FlowerId } from "@/lib/bouquet/flowers";
+import { findFlower, findFlowerColor } from "@/lib/bouquet/flowers";
 import { bouquetGeometry, CANVAS, outlinePoints, type BouquetShape } from "@/lib/bouquet/layout";
 import { findPaper } from "@/lib/bouquet/papers";
-import { satinKey, type BouquetArt, type SatinAsset } from "@/lib/bouquet/satin";
+import type { BouquetArt } from "@/lib/bouquet/satin";
 import { cn } from "@/lib/utils";
-import { FlowerArt } from "./flower-art";
-import { useCutout } from "./use-cutout";
+import { FlowerDef } from "./flower-art";
 
 const PANELS = 14;
 
@@ -38,31 +37,11 @@ export interface BouquetPreviewProps {
   className?: string;
 }
 
-function BloomFace({
-  flowerId,
-  hex,
-  asset,
-}: {
-  flowerId: FlowerId;
-  hex: string;
-  asset?: SatinAsset;
-}) {
-  const cut = useCutout(asset?.knockout ? asset.src : undefined, Boolean(asset?.knockout));
-  const src = asset ? (asset.knockout ? cut : asset.src) : undefined;
-  if (!src) return <FlowerArt flowerId={flowerId} hex={hex} />;
-  return (
-    <image
-      href={src}
-      x={-55}
-      y={-55}
-      width={110}
-      height={110}
-      preserveAspectRatio="xMidYMid meet"
-    />
-  );
-}
-
-export function BouquetPreview({ config, art, onPaintStem, brushLabel, className }: BouquetPreviewProps) {
+/**
+ * The preview always draws vector flowers; the real photos live in the palette.
+ * Each flower-and-colour pair is defined once and every bloom is a `<use>`.
+ */
+export function BouquetPreview({ config, onPaintStem, brushLabel, className }: BouquetPreviewProps) {
   const uid = useId();
   const geometry = bouquetGeometry(config.size);
   const paper = findPaper(config.paperId);
@@ -70,6 +49,13 @@ export function BouquetPreview({ config, art, onPaintStem, brushLabel, className
   const innerReach = clusterHalfWidth + radius + 3;
   const outerReach = innerReach + 72;
   const interactive = typeof onPaintStem === "function";
+  const blooms = geometry.blooms.map((bloom) => {
+    const stem = config.stems[bloom.index];
+    const flower = findFlower(stem?.flowerId);
+    const color = findFlowerColor(flower, stem?.colorId);
+    return { bloom, flower, color, artId: `${uid}-${flower.id}-${color.id}` };
+  });
+  const kinds = new Map(blooms.map((entry) => [entry.artId, entry]));
 
   return (
     <svg
@@ -83,9 +69,9 @@ export function BouquetPreview({ config, art, onPaintStem, brushLabel, className
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </radialGradient>
-        <filter id={`${uid}-bloom-shadow`} x="-30%" y="-30%" width="160%" height="160%">
-          <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#251c15" floodOpacity="0.18" />
-        </filter>
+        {[...kinds.values()].map(({ artId, flower, color }) => (
+          <FlowerDef key={artId} id={artId} flowerId={flower.id} hex={color.hex} />
+        ))}
       </defs>
 
       <rect width={CANVAS.width} height={CANVAS.height} fill={`url(#${uid}-glow)`} />
@@ -97,21 +83,15 @@ export function BouquetPreview({ config, art, onPaintStem, brushLabel, className
         sheet={paper.hex}
       />
 
-      <g filter={`url(#${uid}-bloom-shadow)`}>
-        {geometry.blooms.map((bloom) => {
-          const stem = config.stems[bloom.index];
-          const flower = findFlower(stem?.flowerId);
-          const color = findFlowerColor(flower, stem?.colorId);
+      <g>
+        {blooms.map(({ bloom, flower, color, artId }) => {
           const scale = (bloom.radius / 55) * bloom.scale;
           const name = `${color.name.toLowerCase()} ${flower.name.toLowerCase()}`;
           const bloomArt = (
-            <g transform={`translate(${bloom.x} ${bloom.y}) rotate(${bloom.rotation}) scale(${scale})`}>
-              <BloomFace
-                flowerId={flower.id}
-                hex={color.hex}
-                asset={art.satin[satinKey(flower.id, color.id)]}
-              />
-            </g>
+            <use
+              href={`#${artId}`}
+              transform={`translate(${bloom.x} ${bloom.y}) rotate(${bloom.rotation}) scale(${scale})`}
+            />
           );
 
           if (!interactive) return <g key={bloom.index}>{bloomArt}</g>;

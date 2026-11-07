@@ -20,7 +20,7 @@ describe("bouquet quotes", () => {
 
     const quote = quoteBouquet(config);
     expect(quote.wrapCents).toBe(WRAP_CENTS[10]);
-    expect(quote.bloomsCents).toBe(9_500 * 2 + 6_500 * 2 + 11_000);
+    expect(quote.bloomsCents).toBe(4_900 * 2 + 6_900 * 2 + 6_900);
     expect(quote.totalCents).toBe(quote.wrapCents + quote.bloomsCents);
   });
 
@@ -37,15 +37,15 @@ describe("bouquet quotes", () => {
       size: 10,
       paperId: "kraft",
       stems: [
-        { flowerId: "sunflower", colorId: "marigold" },
+        { flowerId: "chrysanthemum", colorId: "white" },
         { flowerId: "rose", colorId: "blush" },
-        { flowerId: "sunflower", colorId: "marigold" },
+        { flowerId: "chrysanthemum", colorId: "white" },
         { flowerId: "gerbera", colorId: "pink" },
         { flowerId: "rose", colorId: "blush" },
       ],
     });
     const order = quote.lines.map((line) => line.label);
-    expect(order).toEqual(["Rose stems", "Gerbera stems", "Sunflower stems"]);
+    expect(order).toEqual(["Rose stems", "Gerbera stems", "Chrysanthemum stems"]);
   });
 
   it("quotes the cheapest possible bouquet as the 'from' price", () => {
