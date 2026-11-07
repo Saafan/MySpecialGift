@@ -46,29 +46,20 @@ const products: SeedProduct[] = [
     colors: [{ name: "White", hex: "#FFFFFF" }],
   },
   {
-    slug: "mug-with-spoon",
-    name: "Mug With Spoon",
-    description:
-      "The wrap-around mug, with a spoon that stays with it. For cocoa, dessert, and anyone who is always looking for a spoon.",
-    priceCents: 24900,
-    imageUrl: "/products/mug-with-spoon.svg",
-    category: "cup",
-    colors: [{ name: "White", hex: "#FFFFFF" }],
-  },
-  {
     slug: "canvas-wall-art",
     name: "Canvas Wall Art Tableau",
     description:
-      "A stretched canvas tableau. The 30 × 40 cm size is 299 EGP. Step up to 40 × 50 cm or 50 × 60 cm when the wall deserves a bigger picture.",
+      "A stretched canvas tableau, wider than it is tall. It starts at 30 × 17 cm for 299 EGP. The 120 × 68 cm size is 799 EGP.",
     priceCents: 29900,
     imageUrl: "/products/canvas-tableau.jpg",
     category: "canvas",
     colors: [],
     options: {
       sizes: [
-        { id: "30x40", label: "30 cm × 40 cm", extraCents: 0 },
-        { id: "40x50", label: "40 cm × 50 cm", extraCents: 5000 },
-        { id: "50x60", label: "50 cm × 60 cm", extraCents: 10000 },
+        { id: "30x17", label: "30 cm × 17 cm", extraCents: 0 },
+        { id: "40x22.5", label: "40 cm × 22.5 cm", extraCents: 10000 },
+        { id: "50x28", label: "50 cm × 28 cm", extraCents: 20000 },
+        { id: "120x68", label: "120 cm × 68 cm", extraCents: 50000 },
       ],
     },
   },
@@ -78,7 +69,7 @@ const products: SeedProduct[] = [
     description:
       "A round glass mug with no handle, a bamboo lid, and a glass straw. The print sits on the glass so the drink still shows through around it.",
     priceCents: 24900,
-    imageUrl: "/products/glass-mug.svg",
+    imageUrl: "/products/glass-mug.jpg",
     category: "cup",
     colors: [{ name: "Clear glass", hex: "#E7F2F6" }],
   },
