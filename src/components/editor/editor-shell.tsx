@@ -35,6 +35,8 @@ export interface EditorShellProps {
     slug: string;
     name: string;
     priceCents: number;
+    /** Colour of the selected option, used to tint the 3D preview. */
+    tintHex?: string;
   };
   category: ProductCategory;
   selection: ProductSelection;
@@ -364,7 +366,7 @@ export function EditorShell({
             initialPayload={initialPayload}
             templateId={effectiveTemplateId}
           />
-          <Preview3D productSlug={product.slug} />
+          <Preview3D productSlug={product.slug} tintHex={product.tintHex} />
         </main>
         <div
           className={cn(

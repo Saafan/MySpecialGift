@@ -8,6 +8,7 @@ import {
   choiceForTemplate,
   resolveUnitPriceCents,
   sanitizeSelection,
+  selectedChoiceHex,
   type ProductSelection,
 } from "@/lib/product-options";
 import { getTemplateMeta } from "@/lib/template-meta";
@@ -20,7 +21,7 @@ export const metadata: Metadata = { title: "Design studio" };
 interface EditorContext {
   designId: string | null;
   initialName: string;
-  product: { id: string; slug: string; name: string; priceCents: number };
+  product: { id: string; slug: string; name: string; priceCents: number; tintHex?: string };
   selection: ProductSelection;
   category: ProductCategory;
   serverPayload: DesignPayload | null;
@@ -56,6 +57,7 @@ async function resolveNewDesign(
       slug: product.slug,
       name: product.name,
       priceCents: resolveUnitPriceCents(product.priceCents, product.options, selection),
+      tintHex: selectedChoiceHex(product.options, selection),
     },
     selection,
     category,
@@ -92,6 +94,7 @@ async function resolveExistingDesign(designId: string): Promise<EditorContext> {
         design.product.options,
         selection,
       ),
+      tintHex: selectedChoiceHex(design.product.options, selection),
     },
     selection,
     category: design.product.category.slug,

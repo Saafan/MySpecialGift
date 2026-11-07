@@ -42,11 +42,26 @@ single write-path intact when you touch these areas.
 
 ## 3D preview
 
-Preserve the defensive behaviours ported into `src/lib/editor/product-3d.ts`:
-texture flips for UV orientation, print-band epsilon against z-fighting, earcut
-for polygon triangulation, dispose of engine/scene/textures on unmount, and
-demand-rendering after shaders compile. Breaking any of these quietly produces
-a black, stretched, or leaking WebGL canvas.
+Preserve the defensive behaviours in `src/lib/editor/product-3d.ts` (scene,
+engine, print texture lifecycle) and `src/lib/editor/product-models/` (one
+procedural builder per category): texture flips for UV orientation, print-band
+epsilon against z-fighting, earcut for polygon triangulation, dispose of
+engine/scene/textures on unmount, and demand-rendering after shaders compile.
+Breaking any of these quietly produces a black, stretched, or leaking WebGL
+canvas.
+
+Performance budget, so the preview runs on low-end phones:
+
+- No post-processing pipeline and no shadow maps. Contact shadows are baked
+  once into a small texture (`buildContactShadows`).
+- Hardware scaling is `1 / min(devicePixelRatio, tierCap)`; Babylon's level
+  is absolute, so `1` means CSS resolution, not device resolution.
+- Tessellation and procedural texture sizes scale with the quality tier
+  (`segments`, `textureSize`); low tier also drops clear-coat and sheen.
+- Static meshes freeze world matrices; non-print materials freeze after the
+  scene is ready.
+- Model UVs are image space (u left→right, v top→bottom) because design
+  textures load with `invertY = false`.
 
 ## Uploads
 

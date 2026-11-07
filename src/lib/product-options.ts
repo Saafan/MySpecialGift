@@ -108,6 +108,13 @@ export function resolveUnitPriceCents(
   return priceCents + (size?.extraCents ?? 0);
 }
 
+/** Hex of the selected choice (e.g. the bottle's colour), if it has one. */
+export function selectedChoiceHex(options: unknown, selection: unknown): string | undefined {
+  const opts = parseProductOptions(options);
+  const selected = sanitizeSelection(opts, selection);
+  return opts.choices.find((entry) => entry.id === selected.choiceId)?.hex;
+}
+
 export function hasSizeUpcharge(options: unknown): boolean {
   return parseProductOptions(options).sizes.some((size) => size.extraCents > 0);
 }

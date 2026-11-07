@@ -1,58 +1,50 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
-import { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 import { Vector3, Color3, Color4 } from "@babylonjs/core/Maths/math";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { PBRMetallicRoughnessMaterial } from "@babylonjs/core/Materials/PBR/pbrMetallicRoughnessMaterial";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
-import { DynamicTexture } from "@babylonjs/core/Materials/Textures/dynamicTexture";
 import { CubeTexture } from "@babylonjs/core/Materials/Textures/cubeTexture";
-import { Vector4 } from "@babylonjs/core/Maths/math.vector";
-import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
 import { ImageProcessingConfiguration } from "@babylonjs/core/Materials/imageProcessingConfiguration";
 import { Layer } from "@babylonjs/core/Layers/layer";
-import earcut from "earcut";
 
-import "@babylonjs/core/Rendering/depthRendererSceneComponent";
-import "@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent";
 import "@babylonjs/core/Cameras/Inputs/arcRotateCameraPointersInput";
 import "@babylonjs/core/Cameras/Inputs/arcRotateCameraMouseWheelInput";
 import "@babylonjs/core/Materials/Textures/Loaders/envTextureLoader";
 
+import type { ProductCategory } from "@/lib/geometry";
 import {
-  ARTBOARD_SIZES,
-  MUG_3D_PRINT,
-  mugBandRadii,
-  previewKind,
-  type PreviewKind,
-  type ProductCategory,
-} from "@/lib/geometry";
+  buildContactShadows,
+  buildProductModel,
+  type QualityTier,
+} from "@/lib/editor/product-models";
 
 /**
- * Babylon.js product scene — ported from V1, where it was the most valuable
- * artifact in the repository: four hand-built product meshes with hard-won
- * geometry constants and eleven documented defensive behaviours. Every one of
- * those comments is preserved below; treat all numeric constants as
- * load-bearing (see Docs/invariants.md).
+ * Babylon.js product scene. The product meshes live in
+ * `src/lib/editor/product-models/` — one procedural model per product, no
+ * downloads. This file owns the studio: engine, lighting, table, backdrop,
+ * the design texture and on-demand rendering (see Docs/invariants.md).
  *
- * The only structural changes from V1: geometry constants are imported from
- * the shared module (one source of truth with the 2D artboard, enforced by a
- * unit test), and the 3D texture assets are compressed WebP.
+ * Performance budget: no post-processing and no shadow maps. Anti-aliasing is
+ * the GPU's native MSAA, shadows are painted once into small textures, world
+ * matrices and materials are frozen once ready, and frames render only when
+ * something changes.
  */
 
-export type QualityTier = "low" | "medium" | "high";
+export type { QualityTier };
 
 export interface ProductSceneOptions {
   category: ProductCategory;
+  /** Picks the exact model within a category (the glass mug). */
+  productSlug?: string;
+  /** Product colour option as a hex string (thermal bottle finish). */
+  tint?: string;
   tier: QualityTier;
   interactive: boolean;
   autoRotate: boolean;
-  /** Round glass mug: same wrap, no handle mesh. */
-  hideHandle?: boolean;
 }
 
 export interface ProductSceneHandle {
@@ -61,21 +53,6 @@ export interface ProductSceneHandle {
   resize: () => void;
   dispose: () => void;
 }
-
-interface CameraPreset {
-  alpha: number;
-  beta: number;
-  radius: number;
-  targetY: number;
-}
-
-const CAMERA_BY_KIND: Record<PreviewKind, CameraPreset> = {
-  cup: { alpha: -Math.PI / 2.3, beta: 1.12, radius: 5.6, targetY: 0.95 },
-  "t-shirt": { alpha: -Math.PI / 2, beta: 0.52, radius: 6.8, targetY: 0.05 },
-  sticker: { alpha: -Math.PI / 2, beta: 0.5, radius: 4.6, targetY: 0.02 },
-  badge: { alpha: -Math.PI / 2, beta: 0.55, radius: 4.4, targetY: 0.02 },
-  panel: { alpha: -Math.PI / 2, beta: Math.PI / 2.15, radius: 5.6, targetY: 1.25 },
-};
 
 export function isWebGLAvailable(): boolean {
   try {
@@ -86,427 +63,45 @@ export function isWebGLAvailable(): boolean {
   }
 }
 
-/* ------------------------------- mug ------------------------------- */
+const STUDIO_PHOTO_ASPECT = 1536 / 1024;
 
-// Must stay consistent with MUG_WALL_CONTROL in src/lib/geometry.ts.
-function buildMugProfile(): Vector3[] {
-  const coords: [number, number][] = [
-    [0.0, 0.0],
-    [0.78, 0.0],
-    [0.8, 0.06],
-    [0.845, 1.0],
-    [0.87, 1.95],
-    [0.875, 2.02],
-    [0.85, 2.05],
-    [0.81, 2.04],
-    [0.78, 1.9],
-    [0.74, 0.12],
-    [0.7, 0.1],
-    [0.0, 0.1],
-  ];
-  return coords.map(([x, y]) => new Vector3(x, y, 0));
-}
-
-function buildHandlePath(steps: number): Vector3[] {
-  const p0 = new Vector3(0.78, 1.62, 0);
-  const p1 = new Vector3(1.5, 1.5, 0);
-  const p2 = new Vector3(1.5, 0.52, 0);
-  const p3 = new Vector3(0.78, 0.48, 0);
-  const path: Vector3[] = [];
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const mt = 1 - t;
-    path.push(
-      new Vector3(
-        mt ** 3 * p0.x + 3 * mt * mt * t * p1.x + 3 * mt * t * t * p2.x + t ** 3 * p3.x,
-        mt ** 3 * p0.y + 3 * mt * mt * t * p1.y + 3 * mt * t * t * p2.y + t ** 3 * p3.y,
-        0,
-      ),
-    );
+/**
+ * Crop the studio photo so it fills the view without stretching, and without
+ * sitting in the world. A mesh behind the product turns into a card as soon
+ * as the camera orbits: its edges swing through the frame. A background layer
+ * is glued to the screen, so the plant stays put and upright.
+ * The plant is on the left of the picture, so a horizontal crop keeps that side.
+ */
+function frameStudioPhoto(texture: Texture, canvas: HTMLCanvasElement): void {
+  const viewAspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
+  if (viewAspect >= STUDIO_PHOTO_ASPECT) {
+    const vSpan = STUDIO_PHOTO_ASPECT / viewAspect;
+    texture.uScale = 1;
+    texture.uOffset = 0;
+    texture.vScale = vSpan;
+    texture.vOffset = (1 - vSpan) * 0.35;
+  } else {
+    const uSpan = viewAspect / STUDIO_PHOTO_ASPECT;
+    texture.uScale = uSpan;
+    texture.uOffset = 0;
+    texture.vScale = 1;
+    texture.vOffset = 0;
   }
-  return path;
 }
 
-function buildMug(
-  scene: Scene,
-  highQuality: boolean,
-  ceramic: PBRMetallicRoughnessMaterial,
-  hideHandle = false,
-) {
-  const body = MeshBuilder.CreateLathe(
-    "mugBody",
-    {
-      shape: buildMugProfile(),
-      tessellation: highQuality ? 96 : 40,
-      sideOrientation: Mesh.DOUBLESIDE,
-    },
-    scene,
-  );
-  body.material = ceramic;
-
-  const casters: Mesh[] = [body];
-  if (!hideHandle) {
-    const handle = MeshBuilder.CreateTube(
-      "mugHandle",
-      {
-        path: buildHandlePath(highQuality ? 48 : 24),
-        radius: 0.1,
-        tessellation: highQuality ? 20 : 8,
-        cap: Mesh.CAP_ALL,
-      },
-      scene,
-    );
-    handle.material = ceramic;
-    // Centre the handle in the un-printed gap (opposite the front-facing print)
-    // so the artwork can wrap nearly all the way around without touching it.
-    handle.rotation.y = -Math.PI / 2;
-    casters.push(handle);
-  }
-
-  const decalMat = new PBRMetallicRoughnessMaterial("decalMat", scene);
-  decalMat.baseColor = new Color3(1, 1, 1);
-  decalMat.metallic = 0;
-  decalMat.roughness = 0.34;
-
-  // Print band as a thin truncated cone that follows the mug wall's taper, so
-  // the artwork hugs the curved surface instead of floating as an oversized
-  // cylinder shell. A tapered cylinder keeps the standard wrap-around UVs.
-  const bandBottom = MUG_3D_PRINT.bandBottom;
-  const bandTop = MUG_3D_PRINT.bandTop;
-  const bandHeight = bandTop - bandBottom;
-  // The band radii include a small epsilon so the band clears the body wall's
-  // mid-height bulge — without it the body z-fights through the artwork.
-  const radii = mugBandRadii();
-  // Wrap the artwork around the mug until just before the handle (centred
-  // in the remaining gap). See MUG_3D_PRINT.handleGapDeg.
-  //
-  // The resulting band aspect ratio (arc length / band height) determines the
-  // cup artboard proportions (ARTBOARD_SIZES.cup) so the design maps 1:1 with
-  // no stretching — enforced by src/lib/geometry.test.ts.
-  const wrap = 1 - MUG_3D_PRINT.handleGapDeg / 360;
-
-  const decal = MeshBuilder.CreateCylinder(
-    "printBand",
-    {
-      height: bandHeight,
-      diameterBottom: radii.bottom * 2,
-      diameterTop: radii.top * 2,
-      arc: wrap,
-      tessellation: highQuality ? 96 : 48,
-      cap: Mesh.NO_CAP,
-      sideOrientation: Mesh.FRONTSIDE,
-    },
-    scene,
-  );
-  decal.position.y = (bandBottom + bandTop) / 2;
-  // Centre the printed arc on the camera-facing side of the mug, opposite the
-  // handle so the design never wraps onto it.
-  decal.rotation.y = Math.PI / 2 - wrap * Math.PI;
-  decal.material = decalMat;
-  decal.isVisible = false;
-
-  return {
-    casters,
-    decal,
-    decalMat,
-    applyTexture: (tex: Texture) => {
-      tex.wrapU = Texture.CLAMP_ADDRESSMODE;
-      tex.wrapV = Texture.CLAMP_ADDRESSMODE;
-      // Opaque wrap — PNG edge alpha otherwise bilinear-filters to black and
-      // draws a hairline around the print band.
-      tex.hasAlpha = false;
-      decalMat.transparencyMode = 0;
-      // Mirror horizontally so text reads correctly from outside the cylinder.
-      tex.uScale = -1;
-      tex.uOffset = 1;
-      tex.vScale = -1;
-      tex.vOffset = 1;
-    },
-  };
+function buildStudioBackdrop(scene: Scene, canvas: HTMLCanvasElement): Texture {
+  const layer = new Layer("backdrop", "/3d/studio-bg.webp", scene, true);
+  const texture = layer.texture as Texture;
+  texture.wrapU = Texture.CLAMP_ADDRESSMODE;
+  texture.wrapV = Texture.CLAMP_ADDRESSMODE;
+  texture.anisotropicFilteringLevel = 4;
+  frameStudioPhoto(texture, canvas);
+  return texture;
 }
 
-/* ----------------------------- t-shirt ----------------------------- */
-
-// Subtle white cotton weave, generated procedurally.
-function createCottonTexture(scene: Scene): DynamicTexture {
-  const size = 256;
-  const tex = new DynamicTexture("cotton", { width: size, height: size }, scene, true);
-  const ctx = tex.getContext() as CanvasRenderingContext2D;
-  ctx.fillStyle = "#f4f4f5";
-  ctx.fillRect(0, 0, size, size);
-  for (let y = 0; y < size; y += 2) {
-    for (let x = 0; x < size; x += 2) {
-      const v = 240 + Math.floor(Math.random() * 14);
-      const shade = (x + y) % 4 === 0 ? v - 6 : v;
-      ctx.fillStyle = `rgb(${shade},${shade},${Math.min(255, shade + 1)})`;
-      ctx.fillRect(x, y, 2, 2);
-    }
-  }
-  tex.update();
-  return tex;
-}
-
-function buildTShirt(scene: Scene, highQuality: boolean) {
-  // Flat-lay tee silhouette in the XoZ plane (+z = collar/top of shirt).
-  const outline: Vector3[] = [
-    new Vector3(-0.38, 0, 1.4),
-    new Vector3(-0.14, 0, 1.27),
-    new Vector3(0.14, 0, 1.27),
-    new Vector3(0.38, 0, 1.4),
-    new Vector3(1.08, 0, 1.18),
-    new Vector3(1.48, 0, 0.52),
-    new Vector3(0.95, 0, 0.28),
-    new Vector3(0.88, 0, -1.42),
-    new Vector3(-0.88, 0, -1.42),
-    new Vector3(-0.95, 0, 0.28),
-    new Vector3(-1.48, 0, 0.52),
-    new Vector3(-1.08, 0, 1.18),
-  ];
-
-  const fabricTex = createCottonTexture(scene);
-  fabricTex.uScale = 4;
-  fabricTex.vScale = 4;
-
-  const fabricMat = new PBRMetallicRoughnessMaterial("fabricMat", scene);
-  fabricMat.baseTexture = fabricTex;
-  fabricMat.metallic = 0;
-  fabricMat.roughness = 0.92;
-
-  const shirt = MeshBuilder.ExtrudePolygon(
-    "tshirt",
-    { shape: outline, depth: 0.14, sideOrientation: Mesh.DOUBLESIDE },
-    scene,
-    earcut,
-  );
-  shirt.position.y = 0.14;
-  shirt.material = fabricMat;
-
-  // Collar rib: subtle torus at the neckline.
-  const collar = MeshBuilder.CreateTorus(
-    "collar",
-    { diameter: 0.62, thickness: 0.07, tessellation: highQuality ? 48 : 24 },
-    scene,
-  );
-  collar.position.set(0, 0.15, 1.3);
-  collar.scaling.z = 0.55;
-  collar.material = fabricMat;
-
-  // Chest print area (portrait), floating just above the fabric.
-  const { width: aw, height: ah } = ARTBOARD_SIZES["t-shirt"];
-  const printW = 1.15;
-  const printH = (printW * ah) / aw;
-  const decalMat = new PBRMetallicRoughnessMaterial("decalMat", scene);
-  decalMat.baseColor = new Color3(1, 1, 1);
-  decalMat.metallic = 0;
-  decalMat.roughness = 0.9;
-
-  const decal = MeshBuilder.CreateGround("printArea", { width: printW, height: printH }, scene);
-  decal.position.set(0, 0.155, 0.1);
-  decal.material = decalMat;
-  decal.isVisible = false;
-
-  return {
-    casters: [shirt, collar],
-    decal,
-    decalMat,
-    applyTexture: (tex: Texture) => {
-      tex.wrapU = Texture.CLAMP_ADDRESSMODE;
-      tex.wrapV = Texture.CLAMP_ADDRESSMODE;
-      // Orient upright for the top-down camera view.
-      tex.vScale = -1;
-      tex.vOffset = 1;
-      tex.hasAlpha = true;
-      decalMat.transparencyMode = 2; // alpha blend so transparent areas show fabric
-    },
-  };
-}
-
-/* ----------------------------- sticker ----------------------------- */
-
-function roundedRectOutline(w: number, h: number, r: number, segments: number): Vector3[] {
-  const pts: Vector3[] = [];
-  const corners: [number, number, number][] = [
-    [w / 2 - r, h / 2 - r, 0],
-    [-(w / 2 - r), h / 2 - r, Math.PI / 2],
-    [-(w / 2 - r), -(h / 2 - r), Math.PI],
-    [w / 2 - r, -(h / 2 - r), (3 * Math.PI) / 2],
-  ];
-  for (const [cx, cz, start] of corners) {
-    for (let i = 0; i <= segments; i++) {
-      const a = start + (i / segments) * (Math.PI / 2);
-      pts.push(new Vector3(cx + r * Math.cos(a), 0, cz + r * Math.sin(a)));
-    }
-  }
-  return pts;
-}
-
-function buildSticker(scene: Scene, highQuality: boolean) {
-  const outline = roundedRectOutline(2.3, 2.3, 0.28, highQuality ? 8 : 4);
-
-  // Glossy white vinyl base with a slight sheen.
-  const vinyl = new PBRMetallicRoughnessMaterial("vinyl", scene);
-  vinyl.baseColor = new Color3(0.99, 0.99, 0.99);
-  vinyl.metallic = 0;
-  vinyl.roughness = 0.25;
-
-  const base = MeshBuilder.ExtrudePolygon(
-    "stickerBase",
-    { shape: outline, depth: 0.035, sideOrientation: Mesh.DOUBLESIDE },
-    scene,
-    earcut,
-  );
-  base.position.y = 0.035;
-  base.material = vinyl;
-
-  const decalMat = new PBRMetallicRoughnessMaterial("decalMat", scene);
-  decalMat.baseColor = new Color3(1, 1, 1);
-  decalMat.metallic = 0;
-  decalMat.roughness = 0.28;
-
-  // Design surface with a small white border around it (die-cut look).
-  const decal = MeshBuilder.CreateGround("stickerart", { width: 2.08, height: 2.08 }, scene);
-  decal.position.y = 0.045;
-  decal.material = decalMat;
-  decal.isVisible = false;
-
-  return {
-    casters: [base],
-    decal,
-    decalMat,
-    applyTexture: (tex: Texture) => {
-      tex.wrapU = Texture.CLAMP_ADDRESSMODE;
-      tex.wrapV = Texture.CLAMP_ADDRESSMODE;
-      tex.vScale = -1;
-      tex.vOffset = 1;
-    },
-  };
-}
-
-/* ------------------------------ badge ------------------------------ */
-
-function buildBadge(scene: Scene, highQuality: boolean) {
-  const tess = highQuality ? 96 : 48;
-
-  // Face cylinder: design is printed on the top cap (texture circle-cropped).
-  const faceUV: Vector4[] = [
-    new Vector4(0, 0, 1, 1), // bottom cap
-    new Vector4(0, 0, 0.02, 0.02), // tube — tiny corner sample (plain)
-    new Vector4(0, 0, 1, 1), // top cap (design)
-  ];
-
-  const decalMat = new PBRMetallicRoughnessMaterial("decalMat", scene);
-  decalMat.baseColor = new Color3(1, 1, 1);
-  decalMat.metallic = 0.05;
-  decalMat.roughness = 0.2;
-
-  const face = MeshBuilder.CreateCylinder(
-    "badgeFace",
-    { diameter: 2.0, height: 0.16, tessellation: tess, faceUV },
-    scene,
-  );
-  face.position.y = 0.16;
-  face.material = decalMat;
-
-  // Metallic rim ring.
-  const rimMat = new PBRMetallicRoughnessMaterial("rimMat", scene);
-  rimMat.baseColor = new Color3(0.85, 0.86, 0.88);
-  rimMat.metallic = 0.95;
-  rimMat.roughness = 0.25;
-
-  const rim = MeshBuilder.CreateTorus(
-    "badgeRim",
-    { diameter: 2.0, thickness: 0.12, tessellation: tess },
-    scene,
-  );
-  rim.position.y = 0.2;
-  rim.material = rimMat;
-
-  return {
-    casters: [face, rim],
-    decal: face,
-    decalMat,
-    applyTexture: (tex: Texture) => {
-      tex.wrapU = Texture.CLAMP_ADDRESSMODE;
-      tex.wrapV = Texture.CLAMP_ADDRESSMODE;
-      // Orient upright for the top-down camera view.
-      tex.vScale = -1;
-      tex.vOffset = 1;
-    },
-  };
-}
-
-/* ------------------------------ panel ------------------------------ */
-
-function buildPanel(scene: Scene, category: ProductCategory) {
-  const { width: aw, height: ah } = ARTBOARD_SIZES[category];
-  const aspect = aw / ah;
-  const maxW = 3.1;
-  const maxH = 2.7;
-  let boardW = 2.35 * aspect;
-  let boardH = 2.35;
-  if (boardW > maxW) {
-    boardW = maxW;
-    boardH = boardW / aspect;
-  }
-  if (boardH > maxH) {
-    boardH = maxH;
-    boardW = boardH * aspect;
-  }
-
-  const frameMat = new PBRMetallicRoughnessMaterial("frameMat", scene);
-  frameMat.baseColor = new Color3(0.36, 0.28, 0.22);
-  frameMat.metallic = 0;
-  frameMat.roughness = 0.55;
-
-  const frame = MeshBuilder.CreateBox(
-    "panelFrame",
-    { width: boardW + 0.12, height: boardH + 0.12, depth: 0.08 },
-    scene,
-  );
-  frame.position.y = boardH / 2 + 0.02;
-  frame.material = frameMat;
-
-  const faceMat = new PBRMetallicRoughnessMaterial("faceMat", scene);
-  faceMat.baseColor = new Color3(0.99, 0.98, 0.96);
-  faceMat.metallic = 0;
-  faceMat.roughness = 0.45;
-
-  const face = MeshBuilder.CreateBox(
-    "panelFace",
-    { width: boardW, height: boardH, depth: 0.04 },
-    scene,
-  );
-  face.position.y = frame.position.y;
-  face.position.z = 0.03;
-  face.material = faceMat;
-
-  const decalMat = new PBRMetallicRoughnessMaterial("decalMat", scene);
-  decalMat.baseColor = new Color3(1, 1, 1);
-  decalMat.metallic = 0;
-  decalMat.roughness = 0.4;
-
-  const decal = MeshBuilder.CreatePlane(
-    "panelArt",
-    { width: boardW * 0.94, height: boardH * 0.94 },
-    scene,
-  );
-  decal.position.y = frame.position.y;
-  decal.position.z = 0.055;
-  decal.material = decalMat;
-  decal.isVisible = false;
-
-  return {
-    casters: [frame, face],
-    decal,
-    decalMat,
-    applyTexture: (tex: Texture) => {
-      tex.wrapU = Texture.CLAMP_ADDRESSMODE;
-      tex.wrapV = Texture.CLAMP_ADDRESSMODE;
-      tex.hasAlpha = false;
-      tex.vScale = -1;
-      tex.vOffset = 1;
-    },
-  };
+/** GPU pixels per CSS pixel. MSAA keeps edges clean, so 2× is plenty. */
+function pixelRatioCap(tier: QualityTier): number {
+  return tier === "high" ? 2 : tier === "medium" ? 1.75 : 1.25;
 }
 
 /* ------------------------------ scene ------------------------------ */
@@ -515,14 +110,13 @@ export function createProductScene(
   canvas: HTMLCanvasElement,
   options: ProductSceneOptions,
 ): ProductSceneHandle {
-  const { category, tier, interactive, autoRotate, hideHandle } = options;
-  const kind = previewKind(category);
+  const { category, productSlug, tint, tier, interactive, autoRotate } = options;
   const highQuality = tier === "high";
   const detailed = tier !== "low";
 
   const engine = new Engine(
     canvas,
-    detailed,
+    true,
     {
       preserveDrawingBuffer: false,
       stencil: false,
@@ -531,31 +125,83 @@ export function createProductScene(
     },
     true,
   );
-  // adaptToDeviceRatio already multiplies by devicePixelRatio (often 3 on
-  // phones). Aim for ~2.6 CSS pixels of GPU resolution on medium phones —
-  // sharper than the old 2× "low" pass, short of a full 3× buffer.
+  // The scaling level is absolute: render size = CSS size / level. Render at
+  // the screen's density (often 3 on phones) up to the tier's cap.
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-  const targetRatio = highQuality ? dpr : detailed ? 2.6 : 1.7;
-  engine.setHardwareScalingLevel(Math.max(highQuality ? 1 : detailed ? 1 : 1.2, dpr / targetRatio));
+  engine.setHardwareScalingLevel(1 / Math.min(dpr, pixelRatioCap(tier)));
 
   const scene = new Scene(engine);
-  // Solid studio backdrop — post-processing pipelines don't preserve canvas alpha.
   scene.clearColor = new Color4(0.976, 0.961, 0.93, 1);
+  scene.skipPointerMovePicking = true;
 
-  // Photographic backdrop rendered as a full-screen layer behind the product.
-  new Layer("backdrop", "/3d/studio-bg.webp", scene, true);
   scene.imageProcessingConfiguration.toneMappingEnabled = true;
   scene.imageProcessingConfiguration.toneMappingType =
     ImageProcessingConfiguration.TONEMAPPING_ACES;
   scene.imageProcessingConfiguration.exposure = 1.05;
   scene.imageProcessingConfiguration.contrast = 1.12;
 
-  // Image-based lighting for realistic PBR reflections.
+  // Image-based lighting does the soft fill and every reflection; one key
+  // light from the front-left adds direction and highlights.
   const envTex = CubeTexture.CreateFromPrefilteredData("/3d/studio.env", scene);
   scene.environmentTexture = envTex;
-  scene.environmentIntensity = highQuality ? 0.9 : detailed ? 0.8 : 0.7;
+  scene.environmentIntensity = highQuality ? 0.95 : detailed ? 0.9 : 0.85;
 
-  const preset = CAMERA_BY_KIND[kind];
+  const key = new DirectionalLight("key", new Vector3(0.5, -1, 0.55), scene);
+  key.intensity = 2.1;
+  key.diffuse = new Color3(1, 0.97, 0.92);
+
+  // One continuous plank photo on the round top. wood-table.webp is 1024×683
+  // and does not tile — repeating it (the old uScale/vScale of 1.3) cut a
+  // hard seam across the right side of the table. Crop the wide image down
+  // to a square texel footprint so the planks keep their proportions.
+  const woodTex = new Texture("/3d/wood-table.webp", scene);
+  woodTex.wrapU = Texture.CLAMP_ADDRESSMODE;
+  woodTex.wrapV = Texture.CLAMP_ADDRESSMODE;
+  const woodUSpan = 683 / 1024;
+  woodTex.uScale = woodUSpan;
+  woodTex.uOffset = (1 - woodUSpan) / 2;
+  woodTex.anisotropicFilteringLevel = detailed ? 16 : 4;
+  const tableMat = new PBRMetallicRoughnessMaterial("tableMat", scene);
+  tableMat.baseTexture = woodTex;
+  tableMat.baseColor = new Color3(1, 0.98, 0.93);
+  tableMat.metallic = 0;
+  tableMat.roughness = 0.58;
+
+  const tableTop = MeshBuilder.CreateDisc(
+    "tableTop",
+    {
+      radius: 4.5,
+      tessellation: detailed ? 64 : 40,
+      sideOrientation: Mesh.DOUBLESIDE,
+    },
+    scene,
+  );
+  // Disc is built in XY. Tip it flat; doubleside keeps the top visible
+  // whichever way the normal ends up pointing.
+  tableTop.rotation.x = -Math.PI / 2;
+  tableTop.material = tableMat;
+
+  const rimMat = new PBRMetallicRoughnessMaterial("tableRim", scene);
+  rimMat.baseColor = new Color3(0.24, 0.13, 0.07);
+  rimMat.metallic = 0;
+  rimMat.roughness = 0.72;
+  const tableRim = MeshBuilder.CreateCylinder(
+    "tableRim",
+    {
+      height: 0.14,
+      diameter: 9,
+      tessellation: detailed ? 64 : 40,
+      cap: Mesh.NO_CAP,
+    },
+    scene,
+  );
+  tableRim.position.y = -0.07;
+  tableRim.material = rimMat;
+
+  const model = buildProductModel({ scene, tier, tint }, category, productSlug);
+  buildContactShadows(scene, model.shadows);
+
+  const preset = model.camera;
   const camera = new ArcRotateCamera(
     "cam",
     preset.alpha,
@@ -565,6 +211,7 @@ export function createProductScene(
     scene,
   );
   camera.minZ = 0.1;
+  camera.maxZ = 80;
   camera.wheelDeltaPercentage = 0.01;
   if (interactive) {
     camera.attachControl(canvas, true);
@@ -575,101 +222,34 @@ export function createProductScene(
     camera.panningSensibility = 1200;
   }
 
-  const hemi = new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
-  hemi.intensity = 0.4;
-  hemi.groundColor = new Color3(0.45, 0.4, 0.34);
+  // Screen-space photo, so orbiting the product never swings the background.
+  const backdropTex = buildStudioBackdrop(scene, canvas);
 
-  const key = new DirectionalLight("key", new Vector3(-0.55, -1, -0.45), scene);
-  key.position = new Vector3(4, 7, 4);
-  key.intensity = 1.8;
-
-  const rimLight = new DirectionalLight("rim", new Vector3(0.6, -0.3, 0.5), scene);
-  rimLight.intensity = 0.35;
-  rimLight.diffuse = new Color3(1, 0.92, 0.82);
-
-  // Shared ceramic material (mug).
-  const ceramic = new PBRMetallicRoughnessMaterial("ceramic", scene);
-  ceramic.baseColor = new Color3(0.98, 0.98, 0.97);
-  ceramic.metallic = 0;
-  ceramic.roughness = 0.3;
-
-  // Warm wooden plank table.
-  const woodTex = new Texture("/3d/wood-table.webp", scene);
-  woodTex.uScale = 1.3;
-  woodTex.vScale = 1.3;
-  woodTex.anisotropicFilteringLevel = 8;
-  const tableMat = new PBRMetallicRoughnessMaterial("tableMat", scene);
-  tableMat.baseTexture = woodTex;
-  tableMat.baseColor = new Color3(1, 0.98, 0.93);
-  tableMat.metallic = 0;
-  tableMat.roughness = 0.58;
-
-  const table = MeshBuilder.CreateCylinder(
-    "table",
-    { height: 0.14, diameter: 9, tessellation: detailed ? 64 : 40 },
-    scene,
-  );
-  table.position.y = -0.07;
-  table.material = tableMat;
-  table.receiveShadows = true;
-
-  // Product model
-  const product =
-    kind === "cup"
-      ? buildMug(scene, detailed, ceramic, hideHandle)
-      : kind === "t-shirt"
-        ? buildTShirt(scene, detailed)
-        : kind === "sticker"
-          ? buildSticker(scene, detailed)
-          : kind === "badge"
-            ? buildBadge(scene, detailed)
-            : buildPanel(scene, category);
-
-  if (highQuality) {
-    const shadowGen = new ShadowGenerator(1024, key);
-    shadowGen.useBlurExponentialShadowMap = true;
-    shadowGen.blurKernel = 32;
-    shadowGen.darkness = 0.5;
-    product.casters.forEach((m) => shadowGen.addShadowCaster(m));
-  } else {
-    const fake = MeshBuilder.CreateDisc(
-      "fakeShadow",
-      { radius: kind === "cup" ? 1.05 : 1.6, tessellation: 24 },
-      scene,
-    );
-    fake.rotation.x = Math.PI / 2;
-    fake.position.y = 0.005;
-    const fakeMat = new PBRMetallicRoughnessMaterial("fakeShadowMat", scene);
-    fakeMat.baseColor = new Color3(0, 0, 0);
-    fakeMat.alpha = 0.16;
-    fakeMat.roughness = 1;
-    fake.material = fakeMat;
-  }
-
-  if (highQuality) {
-    const pipeline = new DefaultRenderingPipeline("pipeline", true, scene, [camera]);
-    pipeline.fxaaEnabled = true;
-    pipeline.samples = 4;
-    pipeline.bloomEnabled = true;
-    pipeline.bloomThreshold = 0.9;
-    pipeline.bloomWeight = 0.1;
-    pipeline.bloomScale = 0.5;
-  } else if (detailed) {
-    const pipeline = new DefaultRenderingPipeline("pipeline", true, scene, [camera]);
-    pipeline.fxaaEnabled = true;
-    pipeline.samples = 2;
-    pipeline.bloomEnabled = false;
+  // Nothing in the studio moves; only the camera does.
+  for (const mesh of scene.meshes) {
+    mesh.isPickable = false;
+    mesh.freezeWorldMatrix();
+    mesh.doNotSyncBoundingInfo = true;
   }
 
   /* design texture */
+  const print = model.print;
+  const blankColor = print.material.albedoColor.clone();
+  const showPrint = (hasDesign: boolean) => {
+    for (const mesh of print.meshes) mesh.isVisible = hasDesign || !!print.alwaysVisible;
+  };
+  showPrint(false);
+
   let designTexture: Texture | null = null;
+  let designRequest = 0;
   const setDesignDataUrl = (dataUrl: string | null) => {
-    if (designTexture) {
-      designTexture.dispose();
-      designTexture = null;
-    }
+    const request = ++designRequest;
     if (!dataUrl) {
-      if (product.decal.name !== "badgeFace") product.decal.isVisible = false;
+      print.material.albedoTexture = null;
+      print.material.albedoColor = blankColor.clone();
+      designTexture?.dispose();
+      designTexture = null;
+      showPrint(false);
       requestRender();
       return;
     }
@@ -680,22 +260,28 @@ export function createProductScene(
       false,
       Texture.TRILINEAR_SAMPLINGMODE,
       () => {
-        product.decalMat.baseTexture = tex;
-        product.decal.isVisible = true;
+        // A newer design arrived while this one decoded.
+        if (request !== designRequest) {
+          tex.dispose();
+          return;
+        }
+        // Swap only once the new image is ready, so the print never blinks.
+        print.material.albedoTexture = tex;
+        print.material.albedoColor = new Color3(1, 1, 1);
+        designTexture?.dispose();
+        designTexture = tex;
+        showPrint(true);
         requestRender();
       },
       () => {
-        if (product.decal.name !== "badgeFace") product.decal.isVisible = false;
+        tex.dispose();
       },
     );
-    // Default to alpha so stickers/badges can show the product through holes;
-    // mug applyTexture turns this off so the wrap blends into the ceramic.
     tex.hasAlpha = true;
     // Sharpen the artwork when the surface is viewed at an angle (e.g. the
     // curved mug band), which otherwise blurs/pixelates the design.
     tex.anisotropicFilteringLevel = 8;
-    product.applyTexture(tex);
-    designTexture = tex;
+    print.configure(tex);
   };
 
   /* render scheduling — on demand, not a continuous loop */
@@ -706,6 +292,11 @@ export function createProductScene(
   scene.executeWhenReady(() => {
     sceneReady = true;
     pendingFrames = Math.max(pendingFrames, 3);
+    // Everything but the print is final now; frozen materials skip the
+    // per-frame dirty checks.
+    for (const material of scene.materials) {
+      if (material !== print.material) material.freeze();
+    }
   });
 
   const loop = () => {
@@ -741,6 +332,7 @@ export function createProductScene(
   // Re-render once env/textures finish loading so first frame isn't dark.
   envTex.onLoadObservable.addOnce(() => requestRender());
   woodTex.onLoadObservable.addOnce(() => requestRender());
+  backdropTex.onLoadObservable.addOnce(() => requestRender());
 
   const onVisibility = () => {
     if (document.hidden) {
@@ -763,6 +355,7 @@ export function createProductScene(
     requestRender,
     resize: () => {
       engine.resize();
+      frameStudioPhoto(backdropTex, canvas);
       requestRender();
     },
     dispose: () => {

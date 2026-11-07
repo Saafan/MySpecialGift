@@ -98,11 +98,38 @@ export function mugBandAspectRatio(): number {
 }
 
 /**
+ * Handle-less drinkware shares the cup artboard, so its print band must keep
+ * the mug's aspect ratio. Given the band radius and how much of the
+ * circumference it wraps, this is the band height that keeps artwork 1:1.
+ */
+export function wrapBandHeight(radius: number, wrapFraction = 1): number {
+  return (wrapFraction * 2 * Math.PI * radius) / mugBandAspectRatio();
+}
+
+/** Can-shaped glass tumbler (round glass mug). Print wraps all the way round. */
+export const GLASS_3D = {
+  radius: 0.74,
+  height: 2.5,
+  /** Vertical centre of the printed band. */
+  bandCenter: 1.24,
+  bandEps: 0.008,
+} as const;
+
+/** Insulated thermal bottle. Print wraps the straight part of the body. */
+export const BOTTLE_3D = {
+  radius: 0.66,
+  /** Where the straight body ends and the shoulder starts. */
+  shoulder: 3.3,
+  bandCenter: 1.72,
+  bandEps: 0.006,
+} as const;
+
+/**
  * Print-area aspect ratios per product category:
  * - cup / bottle: wrap band, wider than tall (aspect derived from the 3D mug)
  * - t-shirt: portrait chest print
  * - sticker / badge / coaster / puzzle / pillow: square
- * - canvas: 3:4 portrait (the 30 × 40 cm tableau)
+ * - canvas: 30:17 landscape (the 30 × 17 cm and 120 × 68 cm tableau)
  * - nfc: credit-card landscape
  */
 const CUP_ARTBOARD_HEIGHT = 520;
@@ -122,7 +149,7 @@ export const ARTBOARD_SIZES: Record<ProductCategory, ArtboardSize> = {
   "t-shirt": { width: 600, height: 760 },
   sticker: SQUARE,
   badge: SQUARE,
-  canvas: { width: 600, height: 800 },
+  canvas: { width: 900, height: 510 },
   coaster: SQUARE,
   chocolate: SQUARE,
   phone: { width: 420, height: 840 },

@@ -17,7 +17,7 @@ await mkdir(DEST, { recursive: true });
 const jobs = [
   // Full-screen backdrop layer — soft-focus photo, tolerant of compression.
   { src: `${SOURCE}/studio-bg.jpg`, dest: `${DEST}/studio-bg.webp`, width: 1600, quality: 72 },
-  // Table texture — tiled at 1.3x on a cylinder viewed at an angle.
+  // Table-top photo — mapped once across the round top, not repeated.
   { src: `${SOURCE}/wood-table.jpg`, dest: `${DEST}/wood-table.webp`, width: 1024, quality: 74 },
 ];
 

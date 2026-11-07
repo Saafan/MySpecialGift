@@ -153,16 +153,31 @@ export function ensureArtboardAtBack(canvas: FabricCanvas) {
 /** Export exactly the artboard region (the print area) as a data URL. */
 export function exportArtboardDataUrl(
   canvas: FabricCanvas,
-  options?: { multiplier?: number; format?: "png" | "jpeg" },
+  options?: {
+    multiplier?: number;
+    format?: "png" | "jpeg";
+    /** Export the default white artboard fill as transparent (unprinted). */
+    clearBackground?: boolean;
+  },
 ) {
   const bounds = getArtboardBounds(canvas);
   const artboard = getArtboard(canvas);
   const prevShadow = artboard?.shadow;
   const prevStroke = artboard?.stroke;
   const prevStrokeWidth = artboard?.strokeWidth;
+  const prevFill = artboard?.fill;
+  const prevBackground = canvas.backgroundColor;
+  const clear =
+    options?.clearBackground &&
+    typeof prevFill === "string" &&
+    ["#ffffff", "#fff", "white"].includes(prevFill.toLowerCase());
   // Drop the drop-shadow and any hairline stroke so they cannot bake into the
   // print wrap as a dark rim around the mug.
   artboard?.set({ shadow: null, stroke: undefined, strokeWidth: 0 });
+  if (clear) {
+    artboard?.set({ fill: "" });
+    canvas.backgroundColor = "";
+  }
   try {
     return canvas.toDataURL({
       format: options?.format ?? "png",
@@ -175,5 +190,9 @@ export function exportArtboardDataUrl(
     });
   } finally {
     artboard?.set({ shadow: prevShadow, stroke: prevStroke, strokeWidth: prevStrokeWidth });
+    if (clear) {
+      artboard?.set({ fill: prevFill });
+      canvas.backgroundColor = prevBackground;
+    }
   }
 }

@@ -11,6 +11,7 @@ import {
   type ProductSceneHandle,
   type QualityTier,
 } from "@/lib/editor/product-3d";
+import { GLASS_MUG_SLUG, printCaptureFor } from "@/lib/editor/product-models";
 import { CATEGORY_LABELS, previewKind, type ProductCategory } from "@/lib/geometry";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -34,7 +35,8 @@ interface ProductCanvasProps {
   tier: QualityTier;
   interactive: boolean;
   autoRotate: boolean;
-  hideHandle?: boolean;
+  productSlug?: string;
+  tint?: string;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -45,7 +47,8 @@ function ProductCanvas({
   tier,
   interactive,
   autoRotate,
-  hideHandle,
+  productSlug,
+  tint,
   className,
   style,
 }: ProductCanvasProps) {
@@ -69,7 +72,8 @@ function ProductCanvas({
         tier,
         interactive,
         autoRotate,
-        hideHandle,
+        productSlug,
+        tint,
       });
       sceneRef.current = handle;
       handle.setDesignDataUrl(latestDataUrl.current);
@@ -86,7 +90,7 @@ function ProductCanvas({
     };
     // dataUrl updates flow through the dedicated effect below (via the ref) —
     // including it here would rebuild the whole engine on every design change.
-  }, [category, tier, interactive, autoRotate, hideHandle]);
+  }, [category, tier, interactive, autoRotate, productSlug, tint]);
 
   useEffect(() => {
     latestDataUrl.current = dataUrl;
@@ -102,7 +106,10 @@ const PREVIEW_DEBOUNCE_MS = 180;
 const PREVIEW_TARGET_RESOLUTION = 1600;
 const PREVIEW_TARGET_RESOLUTION_MOBILE = 1280;
 
-function categoryHint(category: ProductCategory): string {
+function categoryHint(category: ProductCategory, productSlug?: string): string {
+  if (productSlug === GLASS_MUG_SLUG) {
+    return "Your design wraps all the way around the glass; clear areas stay see-through";
+  }
   switch (category) {
     case "cup":
       return "Your design wraps the full mug wall — rim to base, all the way around except the handle";
@@ -128,7 +135,7 @@ function categoryHint(category: ProductCategory): string {
   }
 }
 
-export function Preview3D({ productSlug }: { productSlug?: string }) {
+export function Preview3D({ productSlug, tintHex }: { productSlug?: string; tintHex?: string }) {
   const canvas = useEditorStore((s) => s.canvas);
   const category = useEditorStore((s) => s.category);
   const backgroundColor = useEditorStore((s) => s.backgroundColor);
@@ -173,12 +180,11 @@ export function Preview3D({ productSlug }: { productSlug?: string }) {
           const target =
             tier === "low" ? PREVIEW_TARGET_RESOLUTION_MOBILE : PREVIEW_TARGET_RESOLUTION;
           const multiplier = Math.min(2, Math.max(0.75, target / longEdge));
-          // JPEG for mugs/tees: an opaque wrap has no PNG fringe that reads as
-          // a black hairline on the 3D surface. Stickers and badges keep PNG
-          // so unpainted pixels stay transparent.
-          const kind = previewKind(category);
-          const format = kind === "sticker" || kind === "badge" ? "png" : "jpeg";
-          setDataUrl(exportArtboardDataUrl(canvas, { format, multiplier }));
+          // Opaque prints use JPEG (no PNG fringe to read as a hairline on the
+          // surface); glass, bottle and tee keep PNG so unprinted areas show
+          // the product itself.
+          const { format, clearBackground } = printCaptureFor(category, productSlug);
+          setDataUrl(exportArtboardDataUrl(canvas, { format, multiplier, clearBackground }));
         } catch {
           // Capture can fail on a tainted canvas; the previous preview remains.
         } finally {
@@ -186,7 +192,7 @@ export function Preview3D({ productSlug }: { productSlug?: string }) {
         }
       });
     },
-    [canvas, category, tier],
+    [canvas, category, tier, productSlug],
   );
 
   const scheduleCapture = useCallback(() => {
@@ -266,7 +272,8 @@ export function Preview3D({ productSlug }: { productSlug?: string }) {
             tier={tier}
             interactive={false}
             autoRotate={tier === "high" && previewKind(category) === "cup"}
-            hideHandle={productSlug === "round-glass-mug"}
+            productSlug={productSlug}
+            tint={tintHex}
             className="block h-full w-full outline-none"
             style={{ pointerEvents: "none", touchAction: "none" }}
           />
@@ -331,14 +338,15 @@ export function Preview3D({ productSlug }: { productSlug?: string }) {
               tier={tier}
               interactive
               autoRotate={false}
-              hideHandle={productSlug === "round-glass-mug"}
+              productSlug={productSlug}
+              tint={tintHex}
               className="block h-full w-full outline-none"
               style={{ touchAction: "none" }}
             />
           )}
 
           <p className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ink/40 to-transparent px-6 py-3 text-right text-[11px] text-white/90">
-            {categoryHint(category)}
+            {categoryHint(category, productSlug)}
           </p>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
